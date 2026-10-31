@@ -1,15 +1,20 @@
 import {DndContext, DragOverlay, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, pointerWithin, rectIntersection, closestCenter} from '@dnd-kit/core';
-import {sortableKeyboardCoordinates} from '@dnd-kit/sortable';
+import {SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import {Plus} from 'lucide-react';
-import TierRow from './TierRow';
+import TierRow, {rowDragId} from './TierRow';
 import Pool from './Pool';
 import {TileFace} from './Tile';
 import BrandMark from '@/components/BrandMark';
 import {allItems, containerOf, MAX_ROWS} from '@/lib/board';
 import {dispatch, getEditorState} from '@/store/editor';
 
-// Prefer item hits under the pointer so tiles reorder; fall back to containers, then nearest.
+const isRow = node => node?.data.current?.type === 'row';
+
+// Tier drags only see other tiers. Tile drags prefer item hits under the pointer so tiles reorder,
+// then fall back to containers, then the nearest target.
 function collision(args) {
+  if (isRow(args.active)) return closestCenter({...args, droppableContainers: args.droppableContainers.filter(isRow)});
+  args = {...args, droppableContainers: args.droppableContainers.filter(c => !isRow(c))};
   const hits = pointerWithin(args);
   if (hits.length) {
     const board = getEditorState().board, itemHits = hits.filter(h => containerOf(board, h.id));
@@ -19,7 +24,10 @@ function collision(args) {
   return intersect.length ? intersect : closestCenter(args);
 }
 
-const nameOf = id => allItems(getEditorState().board).find(i => i.id === id)?.name || '卡片';
+function nameOf(id) {
+  const board = getEditorState().board, row = board.rows.find(r => rowDragId(r.id) === id);
+  return row ? `等级 ${row.label}` : allItems(board).find(i => i.id === id)?.name || '卡片';
+}
 const accessibility = {
   announcements: {
     onDragStart: ({active}) => `已拿起 ${nameOf(active.id)}`,
@@ -41,9 +49,11 @@ export default function Board({ref, board, dragId, touch, onEditItem, onEditRow,
   const ranked = board.rows.reduce((n, r) => n + r.items.length, 0);
   const dragging = dragId && allItems(board).find(i => i.id === dragId);
   return <DndContext sensors={sensors} collisionDetection={collision} accessibility={accessibility}
-    onDragStart={({active}) => dispatch({type: 'dragStart', id: active.id})}
-    onDragOver={({over}) => dispatch({type: 'dragOver', overId: over?.id})}
-    onDragEnd={({over}) => dispatch({type: 'dragEnd', overId: over?.id})}
+    onDragStart={({active}) => { if (!isRow(active)) dispatch({type: 'dragStart', id: active.id}); }}
+    onDragOver={({active, over}) => { if (!isRow(active)) dispatch({type: 'dragOver', overId: over?.id}); }}
+    onDragEnd={({active, over}) => dispatch(isRow(active)
+      ? {type: 'moveRowTo', id: active.data.current.rowId, overId: over?.data.current?.rowId}
+      : {type: 'dragEnd', overId: over?.id})}
     onDragCancel={() => dispatch({type: 'dragCancel'})}>
     <div className="export-canvas" ref={ref}>
       <div className="board-heading">
@@ -51,7 +61,9 @@ export default function Board({ref, board, dragId, touch, onEditItem, onEditRow,
         <span className="board-meta">{ranked} / {ranked + board.pool.length} 已排</span>
       </div>
       <div className="tier-board">
-        {board.rows.map((row, index) => <TierRow key={row.id} row={row} onEditItem={onEditItem} onEditRow={() => onEditRow(row, index)} onAddItem={() => onNewItem(row.id)}/>)}
+        <SortableContext items={board.rows.map(r => rowDragId(r.id))} strategy={verticalListSortingStrategy}>
+          {board.rows.map(row => <TierRow key={row.id} row={row} onEditItem={onEditItem} onEditRow={() => onEditRow(row)} onAddItem={() => onNewItem(row.id)}/>)}
+        </SortableContext>
       </div>
       <BrandMark withName className="canvas-foot"/>
     </div>

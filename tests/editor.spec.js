@@ -42,3 +42,11 @@ test('row editing, item preservation, custom image and JSON import',async({page}
  await page.locator('input[type=file][accept="application/json,.json"]').setInputFiles({name:'board.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(restored))});await page.getByRole('button',{name:'导入榜单',exact:true}).click();await expect(page.getByRole('textbox',{name:'榜单标题'})).toHaveValue('导入的榜单');
  await page.getByRole('button',{name:'切换明暗主题'}).click();await expect(page.locator('html')).toHaveAttribute('data-theme','light');
 });
+test('tiers can be dragged as a whole; clicking a tier still edits it',async({page})=>{
+ const before=await state(page);const label=page.getByRole('button',{name:'编辑等级 S+',exact:true});const target=page.getByRole('button',{name:'编辑等级 B',exact:true});
+ const l=await label.boundingBox(),t=await target.boundingBox();await page.mouse.move(l.x+l.width/2,l.y+l.height/2);await page.mouse.down();await page.mouse.move(l.x+l.width/2,l.y+l.height/2+12,{steps:3});await page.mouse.move(t.x+t.width/2,t.y+t.height/2+10,{steps:25});await page.mouse.up();
+ await expect.poll(async()=>(await state(page)).rows.map(r=>r.label).join(',')).toBe('S,A,B,S+,C,D');
+ expect((await state(page)).rows[3].id).toBe(before.rows[0].id);
+ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect.poll(async()=>(await state(page)).rows[0].label).toBe('S+');
+ await page.getByRole('button',{name:'编辑等级 A',exact:true}).click();await expect(page.getByRole('textbox',{name:'等级名称'})).toHaveValue('A');
+});

@@ -10,6 +10,9 @@
 .tier-row{display:flex;min-height:84px;background:var(--panel);border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
 .tier-label{width:92px;min-width:92px;display:flex;align-items:center;justify-content:center;padding:10px 8px;color:#1b1b1f;font-size:30px;font-weight:900;line-height:1.15;text-align:center;overflow-wrap:anywhere;transition:filter .15s}
 .tier-label:hover{filter:brightness(1.07) saturate(1.05)}
+.tier-label{cursor:grab;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.tier-row.row-dragging{position:relative;z-index:5;box-shadow:0 0 0 2px var(--accent),0 18px 40px -10px #000a}
+.tier-row.row-dragging .tier-label{cursor:grabbing}
 .tier-label.long-label{font-size:18px;font-weight:800}
 .tier-items{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-content:center;gap:8px;padding:10px 12px;transition:background .15s,box-shadow .15s}
 .drop-active{background:var(--accent-soft);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}

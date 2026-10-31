@@ -14,6 +14,7 @@ const edits = {
   addRow: s => B.addRow(s),
   updateRow: (s, a) => B.updateRow(s, a.row),
   moveRow: (s, a) => B.moveRow(s, a.id, a.delta),
+  moveRowTo: (s, a) => B.moveRowTo(s, a.id, a.overId),
   deleteRow: (s, a) => B.deleteRow(s, a.id),
   applyPreset: (s, a) => B.applyTierPreset(s, a.preset),
   replaceContestants: (s, a) => B.replaceContestants(s, a.title, a.pool),

@@ -71,6 +71,14 @@ export function moveRow(s, id, delta) {
   [rows[i], rows[j]] = [rows[j], rows[i]];
   return {...s, rows};
 }
+/** Move tier `id` to where tier `overId` sits (drag-and-drop reordering). */
+export function moveRowTo(s, id, overId) {
+  const from = s.rows.findIndex(r => r.id === id), to = s.rows.findIndex(r => r.id === overId);
+  if (from < 0 || to < 0 || from === to) return s;
+  const rows = [...s.rows], [row] = rows.splice(from, 1);
+  rows.splice(to, 0, row);
+  return {...s, rows};
+}
 /** Delete a tier; its items return to the pool. The last tier can't be deleted. */
 export function deleteRow(s, id) {
   const row = s.rows.find(r => r.id === id);
