@@ -23,3 +23,10 @@ export async function checkText(text, scene) {
 
 export const shareInApp = path => sdk().share({path});
 export const qrCode = path => sdk().getQrCode({path, size: 360});
+
+/** Open a Bilibili user's space. Must run inside a click handler (navigate needs a user gesture). Returns false if the SDK can't. */
+export function openSpace(uid) {
+  if (typeof sdk()?.navigate !== 'function') return false;
+  sdk().navigate({type: 'space', id: uid}).catch(() => window.open(`https://space.bilibili.com/${uid}`, '_blank', 'noopener'));
+  return true;
+}

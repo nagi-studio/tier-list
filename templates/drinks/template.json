@@ -2,19 +2,53 @@
   "$schema": "../schema.json",
   "title": "今天喝什么",
   "description": "打工人续命饮品排位",
-  "author": "Nagi-ovo",
-  "tags": ["饮品", "日常"],
+  "author": "卡普迪姆",
+  "bilibili": "312249633",
+  "tags": [
+    "饮品",
+    "日常"
+  ],
   "tiers": "cn",
   "items": [
-    {"name": "美式咖啡", "emoji": "☕"},
-    {"name": "拿铁", "emoji": "🥛"},
-    {"name": "奶茶", "emoji": "🧋"},
-    {"name": "可乐", "emoji": "🥤"},
-    {"name": "气泡水", "emoji": "🫧"},
-    {"name": "抹茶", "emoji": "🍵"},
-    {"name": "橙汁", "emoji": "🍊"},
-    {"name": "椰子水", "emoji": "🥥"},
-    {"name": "啤酒", "emoji": "🍺"},
-    {"name": "白开水", "emoji": "💧"}
+    {
+      "name": "美式咖啡",
+      "emoji": "☕"
+    },
+    {
+      "name": "拿铁",
+      "emoji": "🥛"
+    },
+    {
+      "name": "奶茶",
+      "emoji": "🧋"
+    },
+    {
+      "name": "可乐",
+      "emoji": "🥤"
+    },
+    {
+      "name": "气泡水",
+      "emoji": "🫧"
+    },
+    {
+      "name": "抹茶",
+      "emoji": "🍵"
+    },
+    {
+      "name": "橙汁",
+      "emoji": "🍊"
+    },
+    {
+      "name": "椰子水",
+      "emoji": "🥥"
+    },
+    {
+      "name": "啤酒",
+      "emoji": "🍺"
+    },
+    {
+      "name": "白开水",
+      "emoji": "💧"
+    }
   ]
 }

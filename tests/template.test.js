@@ -20,6 +20,8 @@ test('normalize expands presets and reports readable errors', () => {
   assert.ok(bad.errors.some(e => e.includes('预设')));
   assert.ok(bad.errors.some(e => e.includes('重复')));
   assert.ok(normalizeTemplate({...sample, items: [{name: 'x', image: 'images/a.png'}]}).errors[0].includes('社区模板仓库'));
+  assert.equal(normalizeTemplate({...sample, bilibili: 312249633}).template.bilibili, '312249633');
+  assert.ok(normalizeTemplate({...sample, bilibili: 'space.bilibili.com/1'}).errors[0].includes('UID'));
   assert.ok(normalizeTemplate({...sample, items: [{name: 'x', icon: 'nope'}]}, {knownIcons: new Set(['anthropic'])}).errors[0].includes('品牌'));
 });
 

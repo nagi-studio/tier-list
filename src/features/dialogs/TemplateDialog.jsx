@@ -8,6 +8,7 @@ import {REPO_URL} from '@/lib/constants';
 import {fromCatalog, replaceContestants} from '@/lib/board';
 import {normalizeTemplate, templateToBoard} from '@/lib/template';
 import {toast} from '@/lib/toast';
+import {openSpace} from '@/lib/toySdk';
 import {dispatch, getEditorState} from '@/store/editor';
 
 const BUILTIN = [
@@ -23,13 +24,20 @@ async function loadCommunity(id) {
   return template;
 }
 
-function TemplateCard({title, description, meta, preview, busy, onClick}) {
-  return <button type="button" className="template-card" onClick={onClick} disabled={busy}>
-    <span className="template-preview">{preview.slice(0, 5).map((item, i) => <Logo key={i} item={item} size={28}/>)}{busy && <Loader2 size={18} className="spin"/>}</span>
-    <strong>{title}</strong>
-    {description && <small>{description}</small>}
-    {meta && <span className="template-meta">{meta}</span>}
-  </button>;
+function TemplateCard({title, description, count, author, bilibili, preview, busy, onClick}) {
+  return <div className="template-card">
+    <button type="button" className="template-main" onClick={onClick} disabled={busy}>
+      <span className="template-preview">{preview.slice(0, 5).map((item, i) => <Logo key={i} item={item} size={28}/>)}{busy && <Loader2 size={18} className="spin"/>}</span>
+      <strong>{title}</strong>
+      {description && <small>{description}</small>}
+    </button>
+    {(count || author) && <span className="template-meta">
+      {count && `${count} 个选手`}
+      {author && (bilibili
+        ? <a href={`https://space.bilibili.com/${bilibili}`} target="_blank" rel="noreferrer" onClick={e => { if (openSpace(bilibili)) e.preventDefault(); }}>@{author}</a>
+        : <span>@{author}</span>)}
+    </span>}
+  </div>;
 }
 
 /** Template center: built-in starters plus community templates from templates/ in the repo. */
@@ -53,9 +61,9 @@ export default function TemplateDialog({onClose}) {
   return <Modal title="模板中心" onClose={onClose} className="template-modal">
     <p className="modal-description">换模板会替换当前的等级和选手，可以撤销。</p>
     <h3 className="section-title">内置</h3>
-    <div className="template-grid">{BUILTIN.map(t => <TemplateCard key={t.key} {...t} onClick={() => useBuiltin(t)}/>)}</div>
+    <div className="template-grid">{BUILTIN.map(t => <TemplateCard key={t.key} title={t.title} description={t.description} preview={t.preview} onClick={() => useBuiltin(t)}/>)}</div>
     <h3 className="section-title">社区模板 <span className="count">{community.length}</span></h3>
-    <div className="template-grid">{community.map(t => <TemplateCard key={t.id} {...t} meta={`${t.count} 个选手${t.author ? ` · @${t.author}` : ''}`} busy={loading === t.id} onClick={() => useCommunity(t)}/>)}</div>
+    <div className="template-grid">{community.map(t => <TemplateCard key={t.id} {...t} busy={loading === t.id} onClick={() => useCommunity(t)}/>)}</div>
     <a className="contribute" href={`${REPO_URL}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer"><ExternalLink size={15}/>投稿你的模板：GitHub Nagi-Studio/tier-list</a>
   </Modal>;
 }

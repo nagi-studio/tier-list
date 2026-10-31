@@ -8,7 +8,7 @@
 // Toy package itself: same origin for PNG export, and reachable from mainland China.
 import {readdir, readFile, writeFile, mkdir, rm, stat} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {join, resolve} from 'node:path';
+import {join, relative, resolve} from 'node:path';
 import sharp from 'sharp';
 import {normalizeTemplate, TEMPLATE_ID_RE} from '../src/lib/template.js';
 import {brandKeys} from '../src/components/BrandAvatar.jsx';
@@ -19,7 +19,10 @@ export async function buildTemplates({root = process.cwd(), check = false} = {})
   const srcDir = join(root, 'templates'), outDir = join(root, 'public/community');
   const knownIcons = new Set(brandKeys), errors = [], index = [];
   const ids = (await readdir(srcDir, {withFileTypes: true})).filter(d => d.isDirectory()).map(d => d.name).sort();
-  if (!check) { await rm(outDir, {recursive: true, force: true}); await mkdir(outDir, {recursive: true}); }
+  // Overwrite in place and prune stale files afterwards: wiping the folder makes a running Vite dev server
+  // forget the public files until it restarts.
+  const written = new Set();
+  if (!check) await mkdir(outDir, {recursive: true});
 
   for (const id of ids) {
     const where = `templates/${id}`, fail = msg => errors.push(`${where}: ${msg}`);
@@ -45,20 +48,26 @@ export async function buildTemplates({root = process.cwd(), check = false} = {})
           .extend({top: Math.floor(pad), bottom: Math.ceil(pad), left: Math.floor(pad), right: Math.ceil(pad), background: '#0000'})
           .webp({quality: 82}).toBuffer();
         const name = `${createHash('sha1').update(webp).digest('hex').slice(0, 12)}.webp`;
-        if (!check) { await mkdir(join(outDir, id), {recursive: true}); await writeFile(join(outDir, id, name), webp); }
+        if (!check) { await mkdir(join(outDir, id), {recursive: true}); await writeFile(join(outDir, id, name), webp); written.add(join(id, name)); }
         item.asset = `community/${id}/${name}`;
       } catch (e) { fail(e.code === 'ENOENT' ? `找不到图片 ${item.image}` : `${item.image} 读不出来（${e.message}）`); continue; }
       delete item.image;
     }
 
-    if (!check) await writeFile(join(outDir, `${id}.json`), JSON.stringify(template));
+    if (!check) { await writeFile(join(outDir, `${id}.json`), JSON.stringify(template)); written.add(`${id}.json`); }
     index.push({
-      id, title: template.title, description: template.description, author: template.author, tags: template.tags,
+      id, title: template.title, description: template.description, author: template.author, bilibili: template.bilibili, tags: template.tags,
       count: template.items.length,
       preview: template.items.slice(0, 5).map(({name, emoji, icon, asset}) => ({name, emoji, icon, asset})),
     });
   }
-  if (!check && !errors.length) await writeFile(join(root, 'src/data/community.json'), JSON.stringify(index, null, 1) + '\n');
+  if (!check && !errors.length) {
+    await writeFile(join(root, 'src/data/community.json'), JSON.stringify(index, null, 1) + '\n');
+    for (const file of await readdir(outDir, {recursive: true, withFileTypes: true})) {
+      const rel = relative(outDir, join(file.parentPath ?? file.path, file.name));
+      if (file.isFile() && !written.has(rel)) await rm(join(outDir, rel));
+    }
+  }
   return {index, errors};
 }
 

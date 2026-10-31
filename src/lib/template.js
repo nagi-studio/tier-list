@@ -29,6 +29,11 @@ export function normalizeTemplate(raw, {allowImages = false, knownIcons} = {}) {
   const title = str(raw.title, LIMITS.title, 'title', true);
   const description = str(raw.description, LIMITS.description, 'description');
   const author = str(raw.author, LIMITS.author, 'author');
+  let bilibili;
+  if (raw.bilibili != null) {
+    bilibili = String(raw.bilibili).trim();
+    if (!/^\d{1,19}$/.test(bilibili)) err('bilibili 必须是 B 站 UID（空间链接 space.bilibili.com/ 后面那串数字）');
+  }
   let tags;
   if (raw.tags != null) {
     if (!Array.isArray(raw.tags) || raw.tags.length > LIMITS.tags) err(`tags 必须是最多 ${LIMITS.tags} 个字符串的数组`);
@@ -82,7 +87,7 @@ export function normalizeTemplate(raw, {allowImages = false, knownIcons} = {}) {
     });
   }
   if (errors.length) return {template: null, errors};
-  return {template: {title, ...(description && {description}), ...(author && {author}), ...(tags?.length && {tags}), tiers, items}, errors};
+  return {template: {title, ...(description && {description}), ...(author && {author}), ...(bilibili && {bilibili}), ...(tags?.length && {tags}), tiers, items}, errors};
 }
 
 /** Turn a normalized template into board fields (rows + pool), placing items that carry a tier index. */
