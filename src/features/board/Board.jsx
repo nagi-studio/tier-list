@@ -1,20 +1,26 @@
-import {DndContext, DragOverlay, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, pointerWithin, rectIntersection, closestCenter} from '@dnd-kit/core';
+import {DndContext, DragOverlay, MeasuringStrategy, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, pointerWithin, rectIntersection, closestCenter} from '@dnd-kit/core';
 import {SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import {Plus} from 'lucide-react';
 import TierRow, {rowDragId} from './TierRow';
 import Pool from './Pool';
 import {TileFace} from './Tile';
 import BrandMark from '@/components/BrandMark';
-import {allItems, containerOf, MAX_ROWS} from '@/lib/board';
+import {allItems, containerOf, MAX_ROWS, TRASH_ID} from '@/lib/board';
+import {deleteRow, endItemDrag} from '@/lib/actions';
 import {dispatch, getEditorState} from '@/store/editor';
 
 const isRow = node => node?.data.current?.type === 'row';
+const isTrash = node => node.id === TRASH_ID;
 
-// Tier drags only see other tiers. Tile drags prefer item hits under the pointer so tiles reorder,
+// The trash only counts when the pointer is actually on it, so a sloppy drop never deletes.
+// Tier drags then only see other tiers. Tile drags prefer item hits under the pointer so tiles reorder,
 // then fall back to containers, then the nearest target.
 function collision(args) {
-  if (isRow(args.active)) return closestCenter({...args, droppableContainers: args.droppableContainers.filter(isRow)});
-  args = {...args, droppableContainers: args.droppableContainers.filter(c => !isRow(c))};
+  const trash = pointerWithin({...args, droppableContainers: args.droppableContainers.filter(isTrash)});
+  if (trash.length) return trash;
+  const rest = args.droppableContainers.filter(c => !isTrash(c));
+  if (isRow(args.active)) return closestCenter({...args, droppableContainers: rest.filter(isRow)});
+  args = {...args, droppableContainers: rest.filter(c => !isRow(c))};
   const hits = pointerWithin(args);
   if (hits.length) {
     const board = getEditorState().board, itemHits = hits.filter(h => containerOf(board, h.id));
@@ -23,6 +29,9 @@ function collision(args) {
   const intersect = rectIntersection(args);
   return intersect.length ? intersect : closestCenter(args);
 }
+
+// Re-measure while dragging: the trash moves to a floating position once a drag starts.
+const measuring = {droppable: {strategy: MeasuringStrategy.Always}};
 
 function nameOf(id) {
   const board = getEditorState().board, row = board.rows.find(r => rowDragId(r.id) === id);
@@ -48,12 +57,14 @@ export default function Board({ref, board, dragId, touch, onEditItem, onEditRow,
   );
   const ranked = board.rows.reduce((n, r) => n + r.items.length, 0);
   const dragging = dragId && allItems(board).find(i => i.id === dragId);
-  return <DndContext sensors={sensors} collisionDetection={collision} accessibility={accessibility}
+  return <DndContext sensors={sensors} collisionDetection={collision} accessibility={accessibility} measuring={measuring}
     onDragStart={({active}) => { if (!isRow(active)) dispatch({type: 'dragStart', id: active.id}); }}
     onDragOver={({active, over}) => { if (!isRow(active)) dispatch({type: 'dragOver', overId: over?.id}); }}
-    onDragEnd={({active, over}) => dispatch(isRow(active)
-      ? {type: 'moveRowTo', id: active.data.current.rowId, overId: over?.data.current?.rowId}
-      : {type: 'dragEnd', overId: over?.id})}
+    onDragEnd={({active, over}) => {
+      if (!isRow(active)) endItemDrag(over?.id, active.id);
+      else if (over?.id === TRASH_ID) deleteRow(active.data.current.rowId);
+      else dispatch({type: 'moveRowTo', id: active.data.current.rowId, overId: over?.data.current?.rowId});
+    }}
     onDragCancel={() => dispatch({type: 'dragCancel'})}>
     <div className="export-canvas" ref={ref}>
       <div className="board-heading">
@@ -62,7 +73,7 @@ export default function Board({ref, board, dragId, touch, onEditItem, onEditRow,
       </div>
       <div className="tier-board">
         <SortableContext items={board.rows.map(r => rowDragId(r.id))} strategy={verticalListSortingStrategy}>
-          {board.rows.map(row => <TierRow key={row.id} row={row} onEditItem={onEditItem} onEditRow={() => onEditRow(row)} onAddItem={() => onNewItem(row.id)}/>)}
+          {board.rows.map((row, index) => <TierRow key={row.id} row={row} index={index} total={board.rows.length} onEditItem={onEditItem} onEditRow={() => onEditRow(row)} onAddItem={() => onNewItem(row.id)}/>)}
         </SortableContext>
       </div>
       <BrandMark withName className="canvas-foot"/>

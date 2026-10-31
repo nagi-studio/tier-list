@@ -73,3 +73,27 @@ test('store persists committed boards, skips live drag frames, and falls back on
   store.dispatch({type: 'dragEnd', overId: id});
   assert.equal(JSON.parse(storage.getItem('k')).rows[0].items.length, 1);
 });
+
+test('dropping a tile on the trash deletes it in one undoable step', () => {
+  let s = start();
+  const id = s.board.pool[0].id;
+  s = editorReducer(s, {type: 'dragStart', id});
+  s = editorReducer(s, {type: 'dragOver', overId: s.board.rows[1].id});
+  s = editorReducer(s, {type: 'dragEnd', overId: 'trash'});
+  assert.equal(allItems(s.board).length, 2);
+  assert.equal(s.past.length, 1);
+  s = editorReducer(s, {type: 'undo'});
+  assert.equal(s.board.pool[0].id, id);
+});
+
+test('insert tiers at a position and clear a tier back to the pool', () => {
+  let s = start();
+  s = editorReducer(s, {type: 'addRow', index: 1});
+  assert.equal(s.board.rows[1].label, '新等级');
+  assert.equal(s.board.rows.length, 7);
+  const row = s.board.rows[0].id;
+  s = editorReducer(s, {type: 'updateItem', item: s.board.pool[0], target: row});
+  s = editorReducer(s, {type: 'clearRow', id: row});
+  assert.equal(s.board.rows[0].items.length, 0);
+  assert.equal(s.board.pool.length, 3);
+});

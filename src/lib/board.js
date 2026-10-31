@@ -7,6 +7,8 @@ export const TIER_PRESETS = {
   numeric: ['T0', 'T1', 'T2', 'T3', 'T4'],
 };
 export const MAX_ROWS = 30;
+/** Drop target id for deleting by drag. Reserved like 'pool'. */
+export const TRASH_ID = 'trash';
 
 export const uid = () => globalThis.crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 export const makeRows = (preset = 'classic') => TIER_PRESETS[preset].map((label, i) => ({id: uid(), label, color: COLORS[i], items: []}));
@@ -59,9 +61,18 @@ export function duplicateItem(s, id) {
   return item ? addItems(s, [{...item, id: uid(), catalogId: undefined, name: `${item.name} 副本`}]) : s;
 }
 
-export function addRow(s) {
+/** Insert a blank tier at `index` (defaults to the end). */
+export function addRow(s, index = s.rows.length) {
   if (s.rows.length >= MAX_ROWS) return s;
-  return {...s, rows: [...s.rows, {id: uid(), label: '新等级', color: COLORS[s.rows.length % COLORS.length], items: []}]};
+  const rows = [...s.rows];
+  rows.splice(Math.max(0, Math.min(index, rows.length)), 0, {id: uid(), label: '新等级', color: COLORS[s.rows.length % COLORS.length], items: []});
+  return {...s, rows};
+}
+/** Send a tier's items back to the pool. */
+export function clearRow(s, id) {
+  const row = s.rows.find(r => r.id === id);
+  if (!row?.items.length) return s;
+  return {...s, rows: s.rows.map(r => r.id === id ? {...r, items: []} : r), pool: [...s.pool, ...row.items]};
 }
 export const updateRow = (s, row) => ({...s, rows: s.rows.map(r => r.id === row.id ? {...r, label: row.label, color: row.color} : r)});
 export function moveRow(s, id, delta) {
@@ -100,7 +111,7 @@ export const toggleTheme = s => ({...s, theme: s.theme === 'light' ? 'dark' : 'l
 
 export function validateBoard(v) {
   if (!v || v.version !== 1 || typeof v.title !== 'string' || v.title.length > 160 || typeof v.subtitle !== 'string' || v.subtitle.length > 500 || !Array.isArray(v.rows) || v.rows.length < 1 || v.rows.length > MAX_ROWS || !Array.isArray(v.pool)) return false;
-  const ids = new Set(), unique = id => typeof id === 'string' && id.length > 0 && id !== 'pool' && !ids.has(id) && !!ids.add(id);
+  const ids = new Set(), unique = id => typeof id === 'string' && id.length > 0 && id !== 'pool' && id !== TRASH_ID && !ids.has(id) && !!ids.add(id);
   const item = x => x && unique(x.id) && typeof x.name === 'string' && x.name.length <= 160 && (!x.icon || /^[a-z0-9-]+$/.test(x.icon)) && (!x.image || /^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(x.image));
   return v.rows.every(r => r && unique(r.id) && typeof r.label === 'string' && r.label.length <= 30 && /^#[\da-f]{6}$/i.test(r.color) && Array.isArray(r.items) && r.items.every(item)) && v.pool.every(item) && allItems(v).length <= 1000;
 }

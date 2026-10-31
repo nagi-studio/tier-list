@@ -50,3 +50,22 @@ test('tiers can be dragged as a whole; clicking a tier still edits it',async({pa
  await page.getByRole('button',{name:'撤销',exact:true}).click();await expect.poll(async()=>(await state(page)).rows[0].label).toBe('S+');
  await page.getByRole('button',{name:'编辑等级 A',exact:true}).click();await expect(page.getByRole('textbox',{name:'等级名称'})).toHaveValue('A');
 });
+test('right-click menus and the trash',async({page})=>{
+ const s=await state(page),first=s.pool[0],second=s.pool[1];
+ // Tile menu: move to tier A
+ await page.locator(`[data-item-id="${first.id}"] .tile-main`).click({button:'right'});await page.getByRole('menuitem',{name:'移到'}).hover();await page.getByRole('menuitem',{name:'A',exact:true}).click();
+ await expect.poll(async()=>(await state(page)).rows[2].items[0]?.id).toBe(first.id);
+ // Row menu: delete tier A sends its items to the pool
+ await page.getByRole('button',{name:'编辑等级 A',exact:true}).click({button:'right'});await page.getByRole('menuitem',{name:'删除这一级'}).click();
+ await expect.poll(async()=>(await state(page)).rows.map(r=>r.label).join(',')).toBe('S+,S,B,C,D');
+ expect((await state(page)).pool.some(i=>i.id===first.id)).toBe(true);
+ // Drag a tile into the trash, then undo from the toast
+ const dragTo=async(from,getTarget)=>{const h=await from.boundingBox();await page.mouse.move(h.x+h.width/2,h.y+h.height/2);await page.mouse.down();await page.mouse.move(h.x+h.width/2+10,h.y+h.height/2+10,{steps:3});await expect(page.locator('.trash.floating')).toBeVisible();const t=await getTarget().boundingBox();await page.mouse.move(t.x+t.width/2,t.y+t.height/2,{steps:20});await expect(page.locator('.trash.over')).toBeVisible();await page.mouse.up();};
+ await dragTo(page.locator(`[data-item-id="${second.id}"] .drag-handle`),()=>page.locator('.trash'));
+ await expect.poll(async()=>(await state(page)).pool.some(i=>i.id===second.id)).toBe(false);
+ await page.getByRole('button',{name:'撤销'}).last().click();
+ await expect.poll(async()=>(await state(page)).pool.some(i=>i.id===second.id)).toBe(true);
+ // Drag a whole tier into the trash
+ await dragTo(page.getByRole('button',{name:'编辑等级 D',exact:true}),()=>page.locator('.trash'));
+ await expect.poll(async()=>(await state(page)).rows.map(r=>r.label).join(',')).toBe('S+,S,B,C');
+});

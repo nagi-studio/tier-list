@@ -11,7 +11,8 @@ const edits = {
   updateItem: (s, a) => B.updateItem(s, a.item, a.target),
   removeItem: (s, a) => B.removeItem(s, a.id),
   duplicateItem: (s, a) => B.duplicateItem(s, a.id),
-  addRow: s => B.addRow(s),
+  addRow: (s, a) => B.addRow(s, a.index),
+  clearRow: (s, a) => B.clearRow(s, a.id),
   updateRow: (s, a) => B.updateRow(s, a.row),
   moveRow: (s, a) => B.moveRow(s, a.id, a.delta),
   moveRowTo: (s, a) => B.moveRowTo(s, a.id, a.overId),
@@ -53,6 +54,7 @@ export function editorReducer(state, action) {
       const {id, snapshot} = state.drag;
       let board = state.board;
       if (action.overId == null) board = snapshot;
+      else if (action.overId === B.TRASH_ID) board = B.removeItem(board, id);
       else {
         const to = B.targetOf(board, action.overId);
         if (to && id !== action.overId) board = B.moveItem(board, id, to, action.overId);

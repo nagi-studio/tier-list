@@ -5,7 +5,7 @@ import Modal from '@/components/Modal';
 import {COLORS} from '@/lib/board';
 import {cx} from '@/lib/utils';
 import {dispatch} from '@/store/editor';
-import {toast} from '@/lib/toast';
+import {deleteRow} from '@/lib/actions';
 
 /** Rename, recolor, reorder or delete a tier. Reordering applies immediately; name/color on save. */
 export default function RowDialog({row: initial, index, total, onClose}) {
@@ -18,9 +18,8 @@ export default function RowDialog({row: initial, index, total, onClose}) {
     onClose();
   }
   function remove() {
-    dispatch({type: 'deleteRow', id: row.id});
+    deleteRow(row.id);
     onClose();
-    toast('等级已删除，里面的选手回到了待定区');
   }
   return <Modal title="编辑等级" onClose={onClose}>
     <form onSubmit={save}>

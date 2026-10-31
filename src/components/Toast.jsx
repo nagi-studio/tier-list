@@ -1,6 +1,10 @@
-import {useToastMessage} from '@/lib/toast';
+import {dismissToast, useToast} from '@/lib/toast';
 
 export default function Toast() {
-  const message = useToastMessage();
-  return message ? <div className="toast" role="status">{message}</div> : null;
+  const toast = useToast();
+  if (!toast) return null;
+  return <div className="toast" role="status">
+    {toast.text}
+    {toast.action && <button type="button" className="toast-action" onClick={() => { toast.action.onClick(); dismissToast(); }}>{toast.action.label}</button>}
+  </div>;
 }

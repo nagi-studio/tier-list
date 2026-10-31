@@ -36,6 +36,8 @@ h1,h2,p{margin:0}
 .segmented>button span{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
 
 /* Toast */
+.toast-action{margin-left:14px;font-weight:800;color:inherit;text-decoration:underline;text-underline-offset:3px}
+.toast-action:hover{text-decoration:underline;text-underline-offset:3px}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:100;padding:11px 18px;border-radius:999px;background:var(--text);color:var(--bg);font-size:13.5px;font-weight:600;box-shadow:0 12px 30px -6px #0008;max-width:calc(100vw - 32px);animation:toast .2s ease-out}
 @keyframes toast{from{opacity:0;transform:translate(-50%,8px)}}
 

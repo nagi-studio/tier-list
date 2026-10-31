@@ -6,6 +6,7 @@ import Logo from '@/components/Logo';
 import IconPicker from './IconPicker';
 import TargetPicker from './TargetPicker';
 import {dispatch} from '@/store/editor';
+import {deleteItem} from '@/lib/actions';
 
 /** Create or edit a contestant. `isNew` items are added on save; existing ones are updated (and moved if needed). */
 export default function ItemDialog({item: initial, target: initialTarget = 'pool', isNew, rows, onClose}) {
@@ -32,7 +33,7 @@ export default function ItemDialog({item: initial, target: initialTarget = 'pool
       <div className="field"><span className="field-label">放到哪里</span><TargetPicker rows={rows} value={target} onChange={setTarget}/></div>
       <div className="modal-actions">
         {!isNew && <>
-          <button type="button" className="icon-btn danger" aria-label="删除选手" title="删除" onClick={() => act({type: 'removeItem', id: item.id})}><Trash2 size={17}/></button>
+          <button type="button" className="icon-btn danger" aria-label="删除选手" title="删除" onClick={() => { deleteItem(item.id); onClose(); }}><Trash2 size={17}/></button>
           <button type="button" className="icon-btn" aria-label="复制选手" title="复制一份到待定区" onClick={() => act({type: 'duplicateItem', id: item.id})}><Copy size={17}/></button>
         </>}
         <span className="spacer"/>

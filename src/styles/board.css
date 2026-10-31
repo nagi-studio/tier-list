@@ -49,3 +49,13 @@
 .pool-items .tile{background:var(--surface)}
 .pool-empty{flex:1;min-height:92px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--line-strong);border-radius:12px;color:var(--muted);font-size:13.5px}
 
+
+/* Right-click wrapper for tiles: layout-neutral */
+.menu-trigger{display:contents}
+
+/* Trash */
+.trash{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:9px;border:1px dashed var(--line-strong);font-size:13px;font-weight:550;color:var(--muted);white-space:nowrap;transition:background .15s,border-color .15s,color .15s,transform .15s}
+.trash-placeholder{width:96px;height:36px}
+.trash.floating{position:fixed;left:50%;bottom:24px;z-index:40;transform:translateX(-50%);height:52px;padding:0 22px;border-radius:999px;border:1.5px dashed #ff7b86;background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(8px);color:#ff7b86;font-size:14px;box-shadow:0 12px 30px -8px #000a;animation:trash-in .18s ease-out}
+.trash.floating.over{background:#ff5b6b;border-style:solid;border-color:#ff5b6b;color:#fff;transform:translateX(-50%) scale(1.08)}
+@keyframes trash-in{from{opacity:0;transform:translate(-50%,12px)}}
