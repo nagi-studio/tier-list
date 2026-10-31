@@ -148,3 +148,22 @@ test('tiles never scale while another tile is dragged over them',async({page})=>
  await page.mouse.up();
  expect(Math.max(...scales)).toBe(0);
 });
+test('random drags across tiers never crash the page (tile ping-pong between containers)',async({page})=>{
+ // Seed 1 crashed on its 4th drag before the settle guard in Board: a tile moved between two tiers in a
+ // loop within one frame until React threw "Maximum update depth exceeded" and the page went blank.
+ test.setTimeout(120_000);
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ let seed=1;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+ for(let i=0;i<30;i++){
+  const tiles=await page.locator('.tile').all();const src=must(tiles[Math.floor(rnd()*tiles.length)]);const sb=await src.boundingBox({timeout:1000}).catch(()=>null);
+  const targets=await page.locator('.tile, .tier-items, .pool-items, .tier-label').all();const tb=await must(targets[Math.floor(rnd()*targets.length)]).boundingBox({timeout:1000}).catch(()=>null);
+  if(!sb||!tb)continue;
+  await page.mouse.move(sb.x+sb.width/2,sb.y+sb.height/2);await page.mouse.down();await page.mouse.move(sb.x+sb.width/2+8,sb.y+sb.height/2+8,{steps:2});
+  const steps=5+Math.floor(rnd()*15);
+  for(let k=1;k<=steps;k++)await page.mouse.move(sb.x+(tb.x+tb.width*rnd()-sb.x)*k/steps,sb.y+(tb.y+tb.height*rnd()-sb.y)*k/steps);
+  await page.mouse.up();
+ }
+ expect(errors).toEqual([]);
+ await expect(page.locator('.app-shell')).toBeVisible();
+ expect(new Set((await state(page)).rows.flatMap(r=>r.items).concat((await state(page)).pool).map(i=>i.id)).size).toBe(14);
+});

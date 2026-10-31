@@ -1,11 +1,11 @@
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import type {CollisionDetection, DndContextProps, UniqueIdentifier} from '@dnd-kit/core';
 import type {Board as BoardState, Item, Row} from '@/lib/board';
 import {createDragParser, rowDragId} from './drag';
 import type {DragNode, DragSource} from './drag';
 import {POOL} from '@/lib/ids';
 import type {ItemId, ContainerId} from '@/lib/ids';
-import {DndContext, DragOverlay, MeasuringStrategy, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, pointerWithin, rectIntersection, closestCenter} from '@dnd-kit/core';
+import {DndContext, DragOverlay, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, pointerWithin, rectIntersection, closestCenter} from '@dnd-kit/core';
 import {SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy} from '@dnd-kit/sortable';
 import {Plus} from 'lucide-react';
 import TierRow from './TierRow';
@@ -15,11 +15,25 @@ import {TileFace} from './Tile';
 import CreditBar from './CreditBar';
 import {allItems, MAX_ROWS} from '@/lib/board';
 import {deleteRow, endItemDrag} from '@/lib/actions';
-import {dispatch} from '@/store/editor';
+import {dispatch, getEditorState} from '@/store/editor';
 
 // The boundary parses each registered droppable once per collision pass. The collision policy
 // then works on discriminated nodes, including the distinction between a row and its item container.
-function collisionFor(parse: ReturnType<typeof createDragParser>): CollisionDetection {
+// A tile that just moved to another tier changes the layout under the pointer; re-detecting before that
+// settles can pick a tile in the old tier, move it back, and repeat within one frame until React aborts
+// ("Maximum update depth exceeded" → blank page). While `settling.current` is set we keep the last target.
+type Settle = {settling: boolean; lastOver: UniqueIdentifier | null};
+function collisionFor(parse: ReturnType<typeof createDragParser>, settle: Settle): CollisionDetection {
+  const detect = collisionPolicy(parse);
+  return args => {
+    if (settle.settling && settle.lastOver != null) return [{id: settle.lastOver}];
+    const hits = detect(args);
+    settle.lastOver = hits[0]?.id ?? null;
+    return hits;
+  };
+}
+
+function collisionPolicy(parse: ReturnType<typeof createDragParser>): CollisionDetection {
   return args => {
     const nodes = args.droppableContainers.map(container => ({container, node: parse(container.id)}));
     const trash = pointerWithin({...args, droppableContainers: nodes.filter(({node}) => node?.kind === 'trash').map(({container}) => container)});
@@ -37,14 +51,12 @@ function collisionFor(parse: ReturnType<typeof createDragParser>): CollisionDete
   };
 }
 
-// Re-measure while dragging: the trash moves to a floating position once a drag starts.
-const measuring = {droppable: {strategy: MeasuringStrategy.Always}};
-
 /** The exportable tier list plus the pool, sharing one drag context. `ref` points at the export canvas. */
 export default function Board({board, dragId, touch, onEditItem, onEditRow, onNewItem}: {board: BoardState; dragId?: ItemId; touch: boolean; onEditItem: (item: Item) => void; onEditRow: (row: Row) => void; onNewItem: (target: ContainerId) => void}) {
   const [source, setSource] = useState<DragSource | null>(null);
   const parse = createDragParser(board);
-  const collision = collisionFor(parse);
+  const settle = useRef<Settle>({settling: false, lastOver: null}).current;
+  const collision = collisionFor(parse, settle);
   const nameOf = (id: UniqueIdentifier) => {
     const node = parse(id);
     if (node?.kind === 'row') return `等级 ${board.rows.find(row => row.id === node.id)?.label ?? ''}`;
@@ -67,7 +79,7 @@ export default function Board({board, dragId, touch, onEditItem, onEditRow, onNe
   );
   const ranked = board.rows.reduce((n, r) => n + r.items.length, 0);
   const dragging = dragId && allItems(board).find(i => i.id === dragId);
-  return <DndContext sensors={sensors} collisionDetection={collision} accessibility={accessibility} measuring={measuring}
+  return <DndContext sensors={sensors} collisionDetection={collision} accessibility={accessibility}
     onDragStart={({active}) => {
       const node = parse(active.id);
       if (node?.kind === 'item' || node?.kind === 'row') {
@@ -76,7 +88,13 @@ export default function Board({board, dragId, touch, onEditItem, onEditRow, onNe
       }
     }}
     onDragOver={({over}) => {
-      if (source?.kind === 'item') dispatch({type: 'dragOver', target: itemTarget(over ? parse(over.id) : null)});
+      if (source?.kind !== 'item') return;
+      const before = getEditorState().board;
+      dispatch({type: 'dragOver', target: itemTarget(over ? parse(over.id) : null)});
+      if (getEditorState().board !== before) {
+        settle.settling = true;
+        requestAnimationFrame(() => { settle.settling = false; });
+      }
     }}
     onDragEnd={({over}) => {
       const target = over ? parse(over.id) : null;
