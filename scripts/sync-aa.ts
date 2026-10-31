@@ -1,9 +1,12 @@
 import {z} from 'zod';
+import sharp from 'sharp';
 import {modelIdSchema} from '../src/lib/ids';
 import type {Model} from '../src/lib/catalog.ts';
 // Sync the AI model catalog from Artificial Analysis public pages.
-// Usage: bun scripts/sync-aa.ts   → writes src/data/models.json + src/data/models-source.json
-import {writeFile} from 'node:fs/promises';
+// Usage: bun scripts/sync-aa.ts               → writes src/data/models.json + src/data/models-source.json
+//        bun scripts/sync-aa.ts --logos-only  → only (re)fetch logos for the models already in models.json
+// Providers without a LobeHub icon get AA's creator logo, saved as public/logos/<creator>.webp (shipped, not hot-linked).
+import {mkdir, readFile, writeFile} from 'node:fs/promises';
 
 const UA = 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 Chrome/130 Safari/537.36';
 // Each creator's best model is a flagship if it scores at least this; any model at FRONTIER or above is too.
@@ -33,10 +36,44 @@ function extractArray(text: string, key: string): unknown {
   }
 }
 
+const LOGO_SIZE = 96;
+/** Download a creator logo from AA and store it as a padded square WebP. Returns the public path, or undefined. */
+async function saveLogo(slug: string, path: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(new URL(path, 'https://artificialanalysis.ai'), {headers: {'user-agent': UA}, signal: AbortSignal.timeout(10000)});
+    if (!res.ok) return undefined;
+    const inner = Math.round(LOGO_SIZE * .8), pad = (LOGO_SIZE - inner) / 2;
+    const webp = await sharp(Buffer.from(await res.arrayBuffer()), {density: 300})
+      .resize(inner, inner, {fit: 'contain', background: '#0000'})
+      .extend({top: Math.floor(pad), bottom: Math.ceil(pad), left: Math.floor(pad), right: Math.ceil(pad), background: '#0000'})
+      .webp({quality: 85}).toBuffer();
+    const file = `logos/${slug.replace(/[^a-z0-9-]/g, '-')}.webp`;
+    await mkdir('public/logos', {recursive: true});
+    await writeFile(`public/${file}`, webp);
+    return file;
+  } catch { return undefined; }
+}
+
 const releases = z.array(z.object({
-  slug: modelIdSchema, name: z.string(), creator: z.object({name: z.string(), slug: z.string()}),
+  slug: modelIdSchema, name: z.string(), creator: z.object({name: z.string(), slug: z.string(), logo: z.string().nullish()}),
   intelligenceIndex: z.number().nullish(), releaseDate: z.string(), isOpenWeights: z.boolean().nullish(), isDeprecated: z.boolean().nullish(),
 })).parse(extractArray(await flight('/models/releases'), 'releases'));
+// Logos for creators LobeHub doesn't cover, keyed by creator name (what models.json stores as `provider`).
+const logos = new Map<string, string>();
+for (const creator of new Map(releases.map(r => [r.creator.slug, r.creator])).values()) {
+  if (ICONS[creator.slug] || !creator.logo) continue;
+  const file = await saveLogo(creator.slug, creator.logo);
+  if (file) logos.set(creator.name, file);
+}
+const withLogo = (m: Model): Model => !m.icon && logos.has(m.provider) ? {...m, logo: logos.get(m.provider)} : m;
+
+if (process.argv.includes('--logos-only')) {
+  const current: Model[] = JSON.parse(await readFile('src/data/models.json', 'utf8'));
+  await writeFile('src/data/models.json', JSON.stringify(current.map(withLogo), null, 0).replace(/},{/g, '},\n{') + '\n');
+  console.log(`logos for ${logos.size} providers:`, [...logos.keys()].join(', '));
+  process.exit(0);
+}
+
 const variants = z.array(z.object({modelCreatorName: z.string(), modelCreatorColor: z.string().nullish()})).parse(extractArray(await flight('/leaderboards/models'), 'initialModels'));
 const colors = Object.fromEntries(variants.map(v => [v.modelCreatorName, v.modelCreatorColor ?? undefined]));
 
@@ -48,7 +85,7 @@ const models: Model[] = releases.map(r => ({
   date: r.releaseDate,
   ...(r.isOpenWeights ? {open: true} : {}),
   ...(r.isDeprecated ? {deprecated: true} : {}),
-}));
+})).map(withLogo);
 const best: Record<string, Model> = {};
 for (const m of models) if (m.score && !m.deprecated && (!best[m.provider] || m.score > (best[m.provider]?.score ?? -Infinity))) best[m.provider] = m;
 for (const m of models) if (m.score && !m.deprecated && (m.score >= FRONTIER || (best[m.provider] === m && m.score >= FLAGSHIP_MIN))) m.flagship = true;

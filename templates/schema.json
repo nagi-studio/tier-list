@@ -234,6 +234,18 @@
               }
             ]
           },
+          "logo": {
+            "description": "选手库自带的厂商 Logo",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^logos\\/[a-z0-9-]+\\.webp$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "tier": {
             "description": "可选：预先放进第几级（从 0 开始）",
             "anyOf": [

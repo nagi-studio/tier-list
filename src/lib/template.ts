@@ -31,10 +31,11 @@ const templateItemSchema = z.object({
   icon: z.string().regex(/^[a-z0-9-]+$/).nullish().describe('内置品牌 Logo，如 openai、anthropic、google'),
   image: z.string().regex(/^[iI][mM][aA][gG][eE][sS]\/[^/\\]+\.([pP][nN][gG]|[jJ][pP][eE]?[gG]|[wW][eE][bB][pP]|[gG][iI][fF]|[sS][vV][gG])$/).nullish().describe('模板目录里 images/ 下的图片'),
   asset: z.string().regex(ASSET_RE).nullish().describe('编译后的社区图片路径'),
+  logo: z.string().regex(/^logos\/[a-z0-9-]+\.webp$/).nullish().describe('选手库自带的厂商 Logo'),
   tier: z.number({error: '必须是整数'}).int({error: '必须是整数'}).min(0, {error: '必须是非负整数'}).nullish().describe('可选：预先放进第几级（从 0 开始）'),
-}).transform(({name, emoji, icon, image, asset, tier}) => ({
+}).transform(({name, emoji, icon, image, asset, logo, tier}) => ({
   name, ...(emoji && {emoji}), ...(icon != null && {icon}), ...(image != null && {image}),
-  ...(asset != null && {asset}), ...(tier != null && {tier}),
+  ...(asset != null && {asset}), ...(logo != null && {logo}), ...(tier != null && {tier}),
 }));
 
 type TemplateOptions = {allowImages?: boolean; knownIcons?: ReadonlySet<string>};
@@ -140,7 +141,7 @@ export function boardToTemplate(board: Board, {withPlacement = true} = {}): {tem
   let droppedImages = 0;
   const toItem = (it: Item, tier?: number): TemplateItem => {
     if (it.image) droppedImages++;
-    return {name: it.name, ...(it.emoji && {emoji: it.emoji}), ...(it.icon && {icon: it.icon}), ...(it.asset && {asset: it.asset}), ...(withPlacement && tier != null && {tier})};
+    return {name: it.name, ...(it.emoji && {emoji: it.emoji}), ...(it.icon && {icon: it.icon}), ...(it.asset && {asset: it.asset}), ...(it.logo && {logo: it.logo}), ...(withPlacement && tier != null && {tier})};
   };
   const items = [...board.rows.flatMap((r, i) => r.items.map(it => toItem(it, i))), ...board.pool.map(it => toItem(it))];
   return {template: {title: board.title.trim() || '我的 Tier List', tiers: mapNonEmpty(board.rows, r => ({label: r.label, color: r.color})), items}, droppedImages};
@@ -150,16 +151,17 @@ export function boardToTemplate(board: Board, {withPlacement = true} = {}): {tem
 const compact = (tpl: Template, credit?: Credit) => ({
   ...(credit && {c: [credit.template, credit.author ?? '', credit.bilibili ?? '']}),
   t: tpl.title, r: tpl.tiers.map(t => [t.label, t.color.slice(1)]),
-  i: tpl.items.map(it => [it.name, it.emoji || '', it.icon || '', it.asset || '', it.tier ?? -1]),
+  // The 6th slot (logo) was added later; links made before it have 5.
+  i: tpl.items.map(it => [it.name, it.emoji || '', it.icon || '', it.asset || '', it.tier ?? -1, ...(it.logo ? [it.logo] : [])]),
 });
 const compactSchema = z.object({
   c: z.tuple([z.string(), z.string(), z.string()]).optional(),
   t: z.string(), r: z.array(z.tuple([z.string(), z.string()])),
-  i: z.array(z.tuple([z.string(), z.string(), z.string(), z.string(), z.number()])),
+  i: z.array(z.tuple([z.string(), z.string(), z.string(), z.string(), z.number()], z.string())),
 });
 const expand = (c: z.infer<typeof compactSchema>) => ({
   title: c.t, tiers: c.r.map(([label, color]) => ({label, color: `#${color}`})),
-  items: c.i.map(([name, emoji, icon, asset, tier]) => ({name, ...(emoji && {emoji}), ...(icon && {icon}), ...(asset && {asset}), ...(tier >= 0 && {tier})})),
+  items: c.i.map(([name, emoji, icon, asset, tier, logo]) => ({name, ...(emoji && {emoji}), ...(icon && {icon}), ...(asset && {asset}), ...(logo && {logo}), ...(tier >= 0 && {tier})})),
 });
 const toB64url = (bytes: Uint8Array) => btoa(Array.from(bytes, b => String.fromCharCode(b)).join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const fromB64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));

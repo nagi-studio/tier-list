@@ -145,3 +145,15 @@ test('build resolves the author name and avatar from the Bilibili UID, falling b
   assert.equal(byId.plain?.author, '只写了名字');
   assert.equal(warnings.length, 2); // UID 2 and the Toy author (not resolvable in this fixture)
 });
+
+test('share links keep provider logos and still read links made before logos existed', async () => {
+  const template = must(normalizeTemplate({title: 'x', tiers: 'classic', items: [{name: 'MiniCPM', logo: 'logos/openbmb.webp', tier: 0}]}).template);
+  const {template: back} = await decodeShare(await encodeShare(template));
+  assert.equal(back.items[0]?.logo, 'logos/openbmb.webp');
+  // A pre-logo link: 5-slot items
+  const legacy = {t: 'old', r: [['S', 'ff7f7f']], i: [['A', '', '', '', 0]]};
+  const bytes = new TextEncoder().encode(JSON.stringify(legacy));
+  const code = 'j' + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  assert.equal((await decodeShare(code)).template.items[0]?.name, 'A');
+  assert.equal(normalizeTemplate({title: 'x', tiers: 'classic', items: [{name: 'a', logo: 'https://evil/x.webp'}]}).template, null);
+});

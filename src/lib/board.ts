@@ -20,6 +20,8 @@ export const itemSchema = z.object({
   icon: z.string().regex(/^[a-z0-9-]+$/).or(z.literal('')).optional(),
   image: z.string().regex(/^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/).or(z.literal('')).optional(),
   asset: z.string().regex(/^community\/[a-z0-9-]+\/[a-f0-9]{12}\.webp$/).or(z.literal('')).optional(),
+  /** Provider logo shipped in public/logos (for providers LobeHub has no icon for). */
+  logo: z.string().regex(/^logos\/[a-z0-9-]+\.webp$/).optional(),
   emoji: z.string().optional(),
   color: hexColorSchema.optional().catch(undefined),
   provider: z.string().optional(),

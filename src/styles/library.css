@@ -50,3 +50,5 @@
 .provider-option .provider-name{flex:1}
 .provider-dot{width:20px;height:20px;border-radius:6px;background:var(--surface-hover)}
 .provider-popover [cmdk-input]:focus-visible{outline:none}
+/* shadcn's CommandItem greys and resizes every svg inside it; brand logos must keep their own colour and size. */
+.provider-option .brand-avatar svg,.provider-trigger .brand-avatar svg{color:inherit!important;width:auto!important;height:auto!important}
