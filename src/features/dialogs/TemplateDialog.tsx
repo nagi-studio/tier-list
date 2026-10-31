@@ -9,7 +9,7 @@ import Avatar from '@/components/Avatar';
 import Modal from '@/components/Modal';
 import Logo from '@/components/Logo';
 import {community, creditFor, loadCommunity} from '@/lib/community';
-import {flagships} from '@/lib/catalog';
+import {flagships, onePerProvider} from '@/lib/catalog';
 import {REPO_URL, TOY_AUTHOR} from '@/lib/constants';
 import {aiTemplate} from '@/lib/builtins';
 import {replaceContestants} from '@/lib/board';
@@ -19,7 +19,7 @@ import {openVideo} from '@/lib/toySdk';
 import {dispatch, getEditorState} from '@/store/editor';
 
 const BUILTIN = [
-  {key: 'ai', title: 'AI 大模型', description: `当下 AA 榜单前列的 ${flagships.length} 个旗舰模型`, preview: flagships.slice(0, 5), count: flagships.length,
+  {key: 'ai', title: 'AI 大模型', description: `当下 AA 榜单前列的 ${flagships.length} 个旗舰模型`, preview: onePerProvider(flagships, 5), count: flagships.length,
     author: TOY_AUTHOR.name, bilibili: TOY_AUTHOR.bilibili},
   {key: 'blank', title: '空白', description: '从零开始，排什么都行', preview: [{name: '空'}]},
 ];

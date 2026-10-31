@@ -15,6 +15,8 @@ export const source = z.object({
 }).parse(rawSource);
 
 export const flagships = models.filter(m => m.flagship);
+/** The top model of each provider, best first: a varied sample for previews (no two Claudes side by side). */
+export const onePerProvider = (list: Model[], n: number) => list.filter((m, i) => list.findIndex(o => o.provider === m.provider) === i).slice(0, n);
 /** Providers ordered by how many models they have. */
 export const providerCounts = models.reduce((acc, m) => acc.set(m.provider, (acc.get(m.provider) || 0) + 1), new Map<string, number>());
 export const providers = [...providerCounts].sort((a, b) => b[1] - a[1]).map(([p]) => p);
