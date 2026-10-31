@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@custom-variant dark (&:is([data-theme="dark"] *));
+@theme inline {
+ --color-background:var(--bg);--color-foreground:var(--text);
+ --color-card:var(--panel);--color-card-foreground:var(--text);
+ --color-popover:var(--panel);--color-popover-foreground:var(--text);
+ --color-primary:var(--accent);--color-primary-foreground:var(--accent-text);
+ --color-secondary:var(--surface);--color-secondary-foreground:var(--text);
+ --color-muted:var(--surface);--color-muted-foreground:var(--muted);
+ --color-accent:var(--surface-hover);--color-accent-foreground:var(--text);
+ --color-destructive:#ef7777;--color-border:var(--line);--color-input:var(--line);--color-ring:var(--accent);
+ --radius-sm:4px;--radius-md:6px;--radius-lg:8px;--radius-xl:12px;
+}
