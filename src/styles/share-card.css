@@ -1,10 +1,12 @@
 /* Exported image (features/export/ShareCard): 540 CSS px wide, 1080 px at 2×. Follows the board's light/dark theme. */
 .share-stage{position:fixed;top:0;left:-10000px;pointer-events:none}
-.share-card{width:540px;padding:28px 24px 18px;display:flex;flex-direction:column;gap:16px;background:var(--bg);color:var(--text);font-family:var(--font)}
+.share-card{width:540px;padding:28px 24px 24px;display:flex;flex-direction:column;gap:16px;background:var(--bg);color:var(--text);font-family:var(--font)}
 .sc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .sc-title{display:flex;flex-direction:column;gap:6px;min-width:0;padding-top:4px}
 .sc-title h1{margin:0;font-size:28px;font-weight:850;letter-spacing:-.3px;line-height:1.25;overflow-wrap:anywhere}
-.sc-credit{font-size:13.5px;font-weight:600;color:var(--muted)}
+.sc-credit{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.sc-credit .avatar{border-radius:50%}
+:root[data-theme=light] .sc-qr .qr{box-shadow:0 0 0 1px var(--line)}
 .sc-qr{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
 .sc-qr .qr{border-radius:8px}
 .sc-qr small{font-size:11px;font-weight:600;color:var(--muted)}
@@ -14,9 +16,3 @@
 .sc-label.long{font-size:15px}
 .sc-items{flex:1;display:flex;flex-wrap:wrap;align-content:center;gap:6px;padding:8px}
 .sc-tile{display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 5px;border-radius:9px;background:var(--tile);box-shadow:0 0 0 1px var(--line);font-size:14px;font-weight:650;white-space:nowrap}
-.sc-foot{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;font-weight:650;color:var(--dim)}
-.sc-foot small{font-size:11px;font-weight:500}
-.sc-foot>span:first-child{display:flex;align-items:center;gap:6px}
-.sc-foot .mark{height:12px;gap:1.5px}.sc-foot .mark i{width:3.5px}
-.sc-foot .mark i:nth-child(1){height:12px}.sc-foot .mark i:nth-child(2){height:8px}.sc-foot .mark i:nth-child(3){height:5px}
-:root[data-theme=light] .sc-qr .qr{box-shadow:0 0 0 1px var(--line)}

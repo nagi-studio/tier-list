@@ -1,6 +1,6 @@
 import {createRoot} from 'react-dom/client';
 import App from './App';
-import {starterBoard} from './lib/builtins';
+import {creditLegacyBoard, starterBoard} from './lib/builtins';
 import {initEditorStore, dispatch, STORAGE_KEY} from './store/editor';
 import {readIncomingShare} from './lib/share';
 import './styles/index.css';
@@ -9,6 +9,7 @@ initEditorStore({
   storage: localStorage,
   key: STORAGE_KEY,
   fallback: starterBoard,
+  upgrade: creditLegacyBoard,
   onBoardChange: board => { document.documentElement.dataset.theme = board.theme === 'light' ? 'light' : 'dark'; },
 });
 

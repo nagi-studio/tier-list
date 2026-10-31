@@ -20,4 +20,4 @@
 
 /* Toy author: avatar, name, follow */
 .toy-author{display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted)}
-.toy-author img{width:24px;height:24px;border-radius:50%}
+.toy-author .avatar{border-radius:50%}

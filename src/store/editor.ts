@@ -39,6 +39,8 @@ type EditorState = {
 };
 type StoreOptions = {
   storage: Pick<Storage, 'getItem' | 'setItem'>; key: string; fallback: () => Board;
+  /** Bring a board saved by an older version up to date. */
+  upgrade?: (board: Board) => Board;
   onBoardChange?: (board: Board) => void;
 };
 
@@ -106,14 +108,14 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
   }
 }
 
-export function createEditorStore({storage, key, fallback, onBoardChange}: StoreOptions) {
+export function createEditorStore({storage, key, fallback, upgrade = board => board, onBoardChange}: StoreOptions) {
   let saved: unknown = null;
   try { saved = JSON.parse(storage.getItem(key) ?? 'null'); } catch {}
   const persist = (board: Board) => {
     try { storage.setItem(key, JSON.stringify(board)); return false; } catch { return true; }
   };
   const restored = B.boardSchema.safeParse(saved);
-  const board = restored.success ? restored.data : fallback();
+  const board = restored.success ? upgrade(restored.data) : fallback();
   // First visit (or corrupt data): save the starter board so ids stay stable across reloads.
   let state = {...createInitialState(board), saveError: restored.success ? false : persist(board)};
   const listeners = new Set<() => void>();

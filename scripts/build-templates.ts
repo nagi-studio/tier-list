@@ -14,24 +14,30 @@ import {join, relative, resolve} from 'node:path';
 import sharp from 'sharp';
 import {normalizeTemplate} from '../src/lib/template.ts';
 import {templateIdSchema} from '../src/lib/ids';
-import {AI_TEMPLATE_ID} from '../src/lib/constants.ts';
+import {AI_TEMPLATE_ID, TOY_AUTHOR} from '../src/lib/constants.ts';
+import {avatarPath} from '../src/lib/avatar.ts';
 import {brandKeys} from '../src/components/BrandAvatar.tsx';
 
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024, IMAGE_SIZE = 128;
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024, IMAGE_SIZE = 128, AVATAR_SIZE = 96;
 
 const cardSchema = z.object({code: z.literal(0), data: z.object({card: z.object({name: z.string().min(1), face: z.string()})})});
+export type Account = {name: string; avatar: Buffer | null};
 /**
- * Look up a Bilibili account's nickname and avatar by UID (public card API). Resolved at build time so
- * visitors never call Bilibili APIs from the Toy. Returns null when the lookup fails; the build continues.
+ * Look up a Bilibili account's nickname and avatar by UID (public card API) at build time, so visitors never
+ * call Bilibili APIs from the Toy. The avatar is downloaded and shipped in the package (same origin: it can
+ * be drawn into exported images). Returns null when the lookup fails; the build continues.
  */
-export async function lookupBilibili(uid: string): Promise<{name: string; avatar: string} | null> {
+export async function lookupBilibili(uid: string): Promise<Account | null> {
   try {
-    const res = await fetch(`https://api.bilibili.com/x/web-interface/card?mid=${uid}`, {
-      headers: {'user-agent': 'Mozilla/5.0 (tier-list build)'}, signal: AbortSignal.timeout(8000),
-    });
-    const {data} = cardSchema.parse(await res.json());
+    const init = {headers: {'user-agent': 'Mozilla/5.0 (tier-list build)'}, signal: AbortSignal.timeout(8000)};
+    const {data} = cardSchema.parse(await (await fetch(`https://api.bilibili.com/x/web-interface/card?mid=${uid}`, init)).json());
     const face = data.card.face.replace(/^http:/, 'https:');
-    return {name: data.card.name.slice(0, 40), avatar: /^https:\/\/i\d\.hdslb\.com\/bfs\/[\w/.-]+$/.test(face) ? `${face}@96w_96h.webp` : ''};
+    let avatar: Buffer | null = null;
+    if (/^https:\/\/i\d\.hdslb\.com\/bfs\//.test(face)) {
+      const res = await fetch(face, init);
+      if (res.ok) avatar = Buffer.from(await res.arrayBuffer());
+    }
+    return {name: data.card.name.slice(0, 40), avatar};
   } catch { return null; }
 }
 
@@ -42,7 +48,19 @@ export async function buildTemplates({root = process.cwd(), check = false, looku
   // Overwrite in place and prune stale files afterwards: wiping the folder makes a running Vite dev server
   // forget the public files until it restarts.
   const written = new Set<string>();
-  if (!check) await mkdir(outDir, {recursive: true});
+  if (!check) await mkdir(join(outDir, 'avatars'), {recursive: true});
+  const accounts = new Map<string, Promise<Account | null>>();
+  /** Resolve a UID once per build; writes its avatar to community/avatars/<uid>.webp and returns that path. */
+  const account = (uid: string) => {
+    if (!accounts.has(uid)) accounts.set(uid, lookup(uid).then(async found => {
+      if (!found?.avatar) return found;
+      const webp = await sharp(found.avatar).resize(AVATAR_SIZE, AVATAR_SIZE, {fit: 'cover'}).webp({quality: 82}).toBuffer();
+      await writeFile(join(outDir, 'avatars', `${uid}.webp`), webp);
+      written.add(join('avatars', `${uid}.webp`));
+      return found;
+    }));
+    return accounts.get(uid) ?? Promise.resolve(null);
+  };
 
   for (const rawId of ids) {
     const where = `templates/${rawId}`, fail = (msg: string) => errors.push(`${where}: ${msg}`);
@@ -79,16 +97,18 @@ export async function buildTemplates({root = process.cwd(), check = false, looku
 
     if (!check) { await writeFile(join(outDir, `${id}.json`), JSON.stringify(template)); written.add(`${id}.json`); }
     // The account behind the UID decides the displayed name; `author` is only a fallback when the lookup fails.
-    const account = !check && template.bilibili ? await lookup(template.bilibili) : null;
-    if (!check && template.bilibili && !account) warnings.push(`${where}: 没查到 UID ${template.bilibili} 的昵称，先用 author 字段`);
-    const author = account?.name ?? template.author ?? (template.bilibili && `UID ${template.bilibili}`);
+    const found = !check && template.bilibili ? await account(template.bilibili) : null;
+    if (!check && template.bilibili && !found) warnings.push(`${where}: 没查到 UID ${template.bilibili} 的昵称，先用 author 字段`);
+    const author = found?.name ?? template.author ?? (template.bilibili && `UID ${template.bilibili}`);
     index.push({
       id, title: template.title, description: template.description, author: author || undefined, bilibili: template.bilibili,
-      avatar: account?.avatar || undefined, video: template.video, tags: template.tags,
+      ...(found?.avatar && template.bilibili && {avatar: avatarPath(template.bilibili)}), video: template.video, tags: template.tags,
       count: template.items.length,
       preview: template.items.slice(0, 5).map(({name, emoji, icon, asset}) => ({name, emoji, icon, asset})),
     });
   }
+  // The Toy author's avatar (header, built-in AI template) ships the same way.
+  if (!check && !await account(TOY_AUTHOR.bilibili)) warnings.push(`没查到 Toy 作者 UID ${TOY_AUTHOR.bilibili} 的头像`);
   if (!check && !errors.length) {
     await writeFile(join(root, 'src/data/community.json'), JSON.stringify(index, null, 1) + '\n');
     for (const file of await readdir(outDir, {recursive: true, withFileTypes: true})) {

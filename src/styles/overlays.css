@@ -84,7 +84,7 @@
 /* Author row: avatar, name, video, follow */
 .template-count{margin-top:4px;font-size:11.5px;color:var(--dim)}
 .template-author{display:flex;align-items:center;gap:8px;padding:10px 14px 12px;border-top:1px solid var(--line);margin-top:10px}
-.template-author img,.avatar-blank{width:24px;height:24px;border-radius:50%;flex-shrink:0;background:var(--surface)}
+.template-author .avatar,.avatar-blank{width:24px;height:24px;border-radius:50%;flex-shrink:0;background:var(--surface)}
 .author-name{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .video-link{display:flex;color:var(--dim)}
 .video-link:hover{color:var(--accent)}

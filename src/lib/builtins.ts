@@ -1,6 +1,6 @@
 // Built-in templates that live in code rather than templates/ (the AI one follows the synced model catalog).
 import type {Board, Credit, TemplateBoard} from './board.ts';
-import {fromCatalog, initialState, replaceContestants} from './board.ts';
+import {allItems, fromCatalog, initialState, replaceContestants} from './board.ts';
 import {flagships, models} from './catalog.ts';
 import {AI_TEMPLATE_ID, TOY_AUTHOR} from './constants.ts';
 import {templateIdSchema} from './ids.ts';
@@ -10,6 +10,13 @@ export const aiCredit: Credit = {template: templateIdSchema.parse(AI_TEMPLATE_ID
 
 /** First-visit board: the AI flagship template, credited to the Toy author. */
 export const starterBoard = (): Board => ({...initialState(models), credit: aiCredit});
+
+/**
+ * Boards saved before credits existed: if they hold models from the AI library, they came from the built-in
+ * AI template, so credit its author.
+ */
+export const creditLegacyBoard = (board: Board): Board =>
+  board.credit || !allItems(board).some(item => item.catalogId) ? board : {...board, credit: aiCredit};
 
 /** The AI template applied to a board: current tiers, flagship models, author credit. */
 export const aiTemplate = (board: Board): TemplateBoard => ({...replaceContestants({board, title: AI_TITLE, pool: flagships.map(fromCatalog)}), credit: aiCredit});

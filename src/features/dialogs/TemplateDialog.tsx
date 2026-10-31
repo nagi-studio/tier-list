@@ -5,6 +5,7 @@ import type {CommunityEntry} from '@/lib/community';
 import {useState} from 'react';
 import {ExternalLink, Loader2, PlayCircle} from 'lucide-react';
 import FollowButton from '@/components/FollowButton';
+import Avatar from '@/components/Avatar';
 import Modal from '@/components/Modal';
 import Logo from '@/components/Logo';
 import {community, creditFor, loadCommunity} from '@/lib/community';
@@ -19,15 +20,15 @@ import {dispatch, getEditorState} from '@/store/editor';
 
 const BUILTIN = [
   {key: 'ai', title: 'AI 大模型', description: `当下 AA 榜单前列的 ${flagships.length} 个旗舰模型`, preview: flagships.slice(0, 5), count: flagships.length,
-    author: TOY_AUTHOR.name, bilibili: TOY_AUTHOR.bilibili, avatar: TOY_AUTHOR.avatar},
+    author: TOY_AUTHOR.name, bilibili: TOY_AUTHOR.bilibili},
   {key: 'blank', title: '空白', description: '从零开始，排什么都行', preview: [{name: '✦', emoji: '✦'}]},
 ];
 
-type CardProps = Pick<CommunityEntry, 'title' | 'description' | 'author' | 'bilibili' | 'avatar' | 'video'> & {
+type CardProps = Pick<CommunityEntry, 'title' | 'description' | 'author' | 'bilibili' | 'video'> & {
   preview: ComponentProps<typeof Logo>['item'][]; count?: number; busy?: boolean; onClick: () => void;
 };
 
-function TemplateCard({title, description, count, author, bilibili, avatar, video, preview, busy, onClick}: CardProps) {
+function TemplateCard({title, description, count, author, bilibili, video, preview, busy, onClick}: CardProps) {
   return <div className="template-card">
     <button type="button" className="template-main" onClick={onClick} disabled={busy}>
       <span className="template-preview">{preview.slice(0, 5).map((item, i) => <Logo key={i} item={item} size={28}/>)}{busy && <Loader2 size={18} className="spin"/>}</span>
@@ -36,7 +37,7 @@ function TemplateCard({title, description, count, author, bilibili, avatar, vide
       {count && <span className="template-count">{count} 个选手</span>}
     </button>
     {author && <div className="template-author">
-      {avatar ? <img src={avatar} alt="" referrerPolicy="no-referrer"/> : <span className="avatar-blank"/>}
+      {bilibili ? <Avatar uid={bilibili}/> : <span className="avatar-blank"/>}
       <span className="author-name">{author}</span>
       {video && <a className="video-link" href={`https://www.bilibili.com/video/${video}`} target="_blank" rel="noreferrer" title="看 UP 的视频" aria-label={`看 ${author} 的视频`} onClick={e => { if (openVideo(video)) e.preventDefault(); }}><PlayCircle size={16}/></a>}
       {bilibili && <FollowButton uid={bilibili}/>}

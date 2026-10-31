@@ -4,6 +4,7 @@ import {test} from 'bun:test';
 import assert from 'node:assert/strict';
 import {editorReducer, createInitialState, createEditorStore} from '../src/store/editor.ts';
 import {initialState, allItems, boardSchema, replaceContestants} from '../src/lib/board.ts';
+import {aiCredit, creditLegacyBoard} from '../src/lib/builtins.ts';
 
 const start = () => createInitialState(initialState(['a', 'b', 'c'].map(id => ({id: modelIdSchema.parse(id), name: id}))));
 const memoryStorage = () => { const m = new Map<string, string>(); return {getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => m.set(k, v), data: m}; };
@@ -117,4 +118,14 @@ test('export QR toggle defaults to on and flips', () => {
   assert.equal(s.board.exportQr, false);
   s = editorReducer(s, {type: 'toggleExportQr'});
   assert.equal(s.board.exportQr, true);
+});
+
+test('boards saved before credits existed get the AI template credit when they hold library models', () => {
+  const storage = memoryStorage();
+  const legacy = initialState(['a'].map(id => ({id: modelIdSchema.parse(id), name: id})));
+  storage.setItem('k', JSON.stringify(legacy));
+  const upgrade = creditLegacyBoard;
+  assert.deepEqual(createEditorStore({storage, key: 'k', fallback: () => legacy, upgrade}).getState().board.credit, aiCredit);
+  storage.setItem('k', JSON.stringify({...legacy, pool: []}));
+  assert.equal(createEditorStore({storage, key: 'k', fallback: () => legacy, upgrade}).getState().board.credit, undefined);
 });

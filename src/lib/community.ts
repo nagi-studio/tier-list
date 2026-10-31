@@ -9,8 +9,8 @@ import {normalizeTemplate} from './template';
 export const communityEntrySchema = z.object({
   id: templateIdSchema, title: z.string(), description: z.string().optional(),
   author: z.string().optional(), bilibili: bilibiliUidSchema.optional(),
-  // Resolved from the UID at build time (scripts/build-templates.ts); only Bilibili's image CDN is allowed.
-  avatar: z.string().regex(/^https:\/\/i\d\.hdslb\.com\/bfs\/[\w/.@-]+$/).optional(),
+  // Downloaded at build time (scripts/build-templates.ts): community/avatars/<uid>.webp inside the package.
+  avatar: z.string().regex(/^community\/avatars\/\d{1,19}\.webp$/).optional(),
   video: z.string().regex(/^BV[0-9A-Za-z]{10}$/).optional(),
   tags: z.array(z.string()).optional(), count: z.number().int().min(1),
   preview: z.array(itemSchema.pick({name: true, emoji: true, icon: true, asset: true})),

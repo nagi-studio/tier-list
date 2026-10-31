@@ -132,13 +132,16 @@ test('build resolves the author name and avatar from the Bilibili UID, falling b
     await mkdir(join(root, 'templates', id), {recursive: true});
     await writeFile(join(root, 'templates', id, 'template.json'), JSON.stringify({title: id, tiers: 'classic', items: [{name: 'a'}], ...extra}));
   }
-  const lookup = async (uid: string) => uid === '1' ? {name: '真名', avatar: 'https://i0.hdslb.com/bfs/face/x.jpg@96w_96h.webp'} : null;
+  const face = await sharp({create: {width: 200, height: 200, channels: 3, background: '#39f'}}).png().toBuffer();
+  const lookup = async (uid: string) => uid === '1' ? {name: '真名', avatar: face} : null;
   const {index, errors, warnings} = await buildTemplates({root, lookup});
   assert.deepEqual(errors, []);
   const byId = Object.fromEntries(index.map(t => [t.id, t]));
   assert.equal(byId.found?.author, '真名');
-  assert.match(byId.found?.avatar ?? '', /hdslb/);
+  assert.equal(byId.found?.avatar, 'community/avatars/1.webp');
+  assert.equal((await sharp(join(root, 'public/community/avatars/1.webp')).metadata()).width, 96);
+  assert.equal(byId.missing?.avatar, undefined);
   assert.equal(byId.missing?.author, '备用名');
   assert.equal(byId.plain?.author, '只写了名字');
-  assert.equal(warnings.length, 1);
+  assert.equal(warnings.length, 2); // UID 2 and the Toy author (not resolvable in this fixture)
 });
