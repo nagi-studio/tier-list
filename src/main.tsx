@@ -3,6 +3,7 @@ import App from './App';
 import {creditLegacyBoard, starterBoard} from './lib/builtins';
 import {initEditorStore, dispatch, STORAGE_KEY} from './store/editor';
 import {readIncomingShare} from './lib/share';
+import {watchToyAuthorFollow} from './lib/following';
 import './styles/index.css';
 
 initEditorStore({
@@ -23,6 +24,7 @@ window.addEventListener('keydown', e => {
 });
 
 readIncomingShare();
+watchToyAuthorFollow();
 const root = document.getElementById('root');
 if (!root) throw Error('Missing root element');
 createRoot(root).render(<App/>);

@@ -167,3 +167,12 @@ test('random drags across tiers never crash the page (tile ping-pong between con
  await expect(page.locator('.app-shell')).toBeVisible();
  expect(new Set((await state(page)).rows.flatMap(r=>r.items).concat((await state(page)).pool).map(i=>i.id)).size).toBe(14);
 });
+test('follow button turns into 已关注 once the visitor follows the Toy author',async({page})=>{
+ const fake=`window.__following=false;window.toy={isSupport:async a=>a==='getAuthorRelation',getAuthorRelation:async()=>({status:'ok',data:{isFollowing:window.__following}})};`;
+ await page.context().unroute('**/toy-sdk.js');await page.context().route('**/toy-sdk.js',r=>r.fulfill({contentType:'text/javascript',body:fake}));await page.reload();
+ await expect(page.locator('.toy-author .follow-btn')).toHaveText('去关注');
+ // The visitor goes to the author's space, follows, and comes back: the page re-checks when it becomes visible.
+ await page.evaluate(()=>{(window as unknown as {__following:boolean}).__following=true;document.dispatchEvent(new Event('visibilitychange'));});
+ await expect(page.locator('.toy-author .follow-btn')).toHaveText('已关注');
+ await expect(page.locator('.credit-bar .follow-btn')).toHaveText('已关注');
+});

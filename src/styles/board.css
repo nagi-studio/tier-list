@@ -62,3 +62,4 @@
 
 .follow-btn{display:inline-flex;align-items:center;gap:3px;height:26px;padding:0 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;white-space:nowrap;transition:background .15s,color .15s}
 .follow-btn:hover{background:var(--accent);color:var(--accent-text)}
+.follow-btn.followed,.follow-btn.followed:hover{background:var(--surface);color:var(--dim)}

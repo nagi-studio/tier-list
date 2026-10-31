@@ -1,16 +1,39 @@
 // Bilibili Toy SDK is loaded asynchronously; browsers outside Bilibili may never expose it.
 import {z} from 'zod';
 
-type Ability = 'checkInputSafety' | 'share' | 'getQrCode';
+type Ability = 'checkInputSafety' | 'share' | 'getQrCode' | 'getAuthorRelation';
 export interface ToySdk {
   isSupport(ability: Ability): Promise<unknown>;
   checkInputSafety(input: {text: string; scene: string}): Promise<unknown>;
   share(input: {path: string}): Promise<unknown>;
   getQrCode(input: {path: string; size: number}): Promise<unknown>;
   navigate(input: {type: 'space' | 'video'; id: string}): Promise<unknown>;
+  getAuthorRelation(): Promise<unknown>;
 }
 declare global { interface Window { toy?: ToySdk } }
 const sdk = () => window.toy;
+
+/** Resolves once the async SDK script has loaded (or failed / is absent). */
+export function sdkReady(): Promise<ToySdk | undefined> {
+  const script = document.getElementById('toy-sdk');
+  if (window.toy || !(script instanceof HTMLScriptElement)) return Promise.resolve(window.toy);
+  return new Promise(resolve => {
+    const done = () => resolve(window.toy);
+    script.addEventListener('load', done, {once: true});
+    script.addEventListener('error', done, {once: true});
+  });
+}
+
+const relationSchema = z.object({status: z.literal('ok'), data: z.object({isFollowing: z.boolean()})});
+/** Whether the visitor follows this Toy's author. null when unknown (no SDK, not logged in, outside the app…). */
+export async function followsToyAuthor(): Promise<boolean | null> {
+  const toy = await sdkReady();
+  if (!toy || !await supports('getAuthorRelation')) return null;
+  try {
+    const result = relationSchema.safeParse(await toy.getAuthorRelation());
+    return result.success ? result.data.data.isFollowing : null;
+  } catch { return null; }
+}
 const supportResponseSchema = z.boolean();
 const safetySchema = z.object({passed: z.boolean(), status: z.string()});
 const qrSchema = z.object({base64: z.string()});
