@@ -67,7 +67,7 @@ test('right-click menus and the trash',async({page})=>{
  await expect.poll(async()=>(await state(page)).rows.map(r=>r.label).join(',')).toBe('S+,S,B,C,D');
  expect((await state(page)).pool.some(i=>i.id===first.id)).toBe(true);
  // Drag a tile into the trash, then undo from the toast
- const dragTo=async(from: Locator,getTarget: ()=>Locator)=>{const h=must(await from.boundingBox());await page.mouse.move(h.x+h.width/2,h.y+h.height/2);await page.mouse.down();await page.mouse.move(h.x+h.width/2+10,h.y+h.height/2+10,{steps:3});await expect(page.locator('.trash.floating')).toBeVisible();const t=must(await getTarget().boundingBox());await page.mouse.move(t.x+t.width/2,t.y+t.height/2,{steps:20});await expect(page.locator('.trash.over')).toBeVisible();await page.mouse.up();};
+ const dragTo=async(from: Locator,getTarget: ()=>Locator)=>{const h=must(await from.boundingBox());await page.mouse.move(h.x+h.width/2,h.y+h.height/2);await page.mouse.down();await page.mouse.move(h.x+h.width/2+10,h.y+h.height/2+10,{steps:3});await expect(page.locator('.trash.visible')).toBeVisible();const t=must(await getTarget().boundingBox());await page.mouse.move(t.x+t.width/2,t.y+t.height/2,{steps:20});await expect(page.locator('.trash.over')).toBeVisible();await page.mouse.up();};
  await dragTo(page.locator(`[data-item-id="${second.id}"] .drag-handle`),()=>page.locator('.trash'));
  await expect.poll(async()=>(await state(page)).pool.some(i=>i.id===second.id)).toBe(false);
  await page.getByRole('button',{name:'撤销'}).last().click();

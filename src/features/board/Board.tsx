@@ -11,6 +11,7 @@ import {SortableContext, sortableKeyboardCoordinates, verticalListSortingStrateg
 import {Plus} from 'lucide-react';
 import TierRow from './TierRow';
 import Pool from './Pool';
+import Trash from './Trash';
 import {TileFace} from './Tile';
 import CanvasFooter from './CanvasFooter';
 import CreditBar from './CreditBar';
@@ -104,7 +105,8 @@ export default function Board({ref, board, dragId, touch, exporting, onEditItem,
       <CanvasFooter credit={board.credit} showQr={board.exportQr !== false}/>
     </div>
     <button type="button" className="add-row" onClick={() => dispatch({type: 'addRow'})} disabled={board.rows.length >= MAX_ROWS}><Plus size={15}/>添加等级</button>
-    <Pool dragKind={source?.kind} items={board.pool} rankedCount={ranked} touch={touch} onEditItem={onEditItem} onAddItem={() => onNewItem(POOL)}/>
+    <Trash dragKind={source?.kind}/>
+    <Pool items={board.pool} rankedCount={ranked} touch={touch} onEditItem={onEditItem} onAddItem={() => onNewItem(POOL)}/>
     <DragOverlay>{dragging ? <TileFace item={dragging}/> : null}</DragOverlay>
   </DndContext>;
 }
