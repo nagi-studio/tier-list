@@ -64,6 +64,7 @@ test('build script compiles images to webp assets and reports bad templates', as
   await mkdir(join(root, 'src/data'), {recursive: true});
   await writeFile(join(root, 'templates/milk-tea/images/logo.png'), await sharp({create: {width: 400, height: 300, channels: 3, background: '#e33'}}).png().toBuffer());
   await writeFile(join(root, 'templates/milk-tea/template.json'), JSON.stringify({title: '奶茶', tiers: 'classic', items: [{name: '蜜雪', image: 'images/logo.png'}, {name: '茶百道', emoji: '🍵'}]}));
+  await writeFile(join(root, 'templates/milk-tea/NOTICE.md'), 'Generated test image.');
   const ok = await buildTemplates({root});
   assert.deepEqual(ok.errors, []);
   const compiled = templateSchema.parse(JSON.parse(await readFile(join(root, 'public/community/milk-tea.json'), 'utf8')));
@@ -80,6 +81,11 @@ test('build script compiles images to webp assets and reports bad templates', as
   const bad = await buildTemplates({root, check: true});
   assert.ok(bad.errors.some(e => e.includes('Bad_Name') && e.includes('文件夹名')));
   assert.ok(bad.errors.some(e => e.includes('找不到图片')));
+  // Images without a NOTICE.md stating their source are rejected
+  await mkdir(join(root, 'templates/no-notice/images'), {recursive: true});
+  await writeFile(join(root, 'templates/no-notice/images/a.png'), await sharp({create: {width: 8, height: 8, channels: 3, background: '#000'}}).png().toBuffer());
+  await writeFile(join(root, 'templates/no-notice/template.json'), JSON.stringify({title: 'x', tiers: 'classic', items: [{name: 'a', image: 'images/a.png'}]}));
+  assert.ok((await buildTemplates({root, check: true})).errors.some(e => e.includes('no-notice') && e.includes('NOTICE.md')));
 });
 
 test('template boundary preserves normalization and Chinese paths for nested contributor errors', () => {

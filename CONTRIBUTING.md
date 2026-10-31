@@ -33,7 +33,7 @@ templates/milk-tea/          ← 小写英文和短横线
 | `title` | ✅ | 最多 60 字 |
 | `tiers` | ✅ | `"classic"`（S+ 到 D）、`"cn"`（夯 到 拉完了）、`"numeric"`（T0 到 T4），或者自己写：`["神", "人", "鬼"]`、`[{"label": "神", "color": "#ff7f7f"}]` |
 | `items` | ✅ | 1–200 个选手，名字不能重复 |
-| `items[].image` | | `images/` 里的 png / jpg / webp / gif / svg，每张不超过 2MB |
+| `items[].image` | | `images/` 里的 png / jpg / webp / gif / svg，每张不超过 500KB |
 | `items[].emoji` | | 没有图片时显示，Emoji 或 1–3 个字 |
 | `items[].icon` | | 内置品牌 Logo，比如 `openai`、`anthropic` |
 | `items[].tier` | | 预先放进第几级（从 0 数），不填就在待定区 |
@@ -46,7 +46,7 @@ templates/milk-tea/          ← 小写英文和短横线
 
 ## 图片
 
-- 构建时会缩成 128×128，原图大一些没关系。
+- 提交前运行 `bun run images <文件夹名>`，把图片缩到 512px 以内并压缩。Toy 里只用 128×128，太大的原图只会让仓库变臃肿。
 - Logo 尽量用 SVG，会完整保留并留白；照片会居中裁成正方形。
 - 只放你有权使用的图片，并在 `NOTICE.md` 写明来源，可以参考 `templates/programming-languages/`。
 

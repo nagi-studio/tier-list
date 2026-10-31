@@ -18,7 +18,7 @@ import {AI_TEMPLATE_ID, TOY_AUTHOR} from '../src/lib/constants.ts';
 import {avatarPath} from '../src/lib/avatar.ts';
 import {brandKeys} from '../src/components/BrandAvatar.tsx';
 
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024, IMAGE_SIZE = 128, AVATAR_SIZE = 96;
+const MAX_IMAGE_BYTES = 500 * 1024, IMAGE_SIZE = 128, AVATAR_SIZE = 96;
 
 const cardSchema = z.object({code: z.literal(0), data: z.object({card: z.object({name: z.string().min(1), face: z.string()})})});
 export type Account = {name: string; avatar: Buffer | null};
@@ -80,7 +80,7 @@ export async function buildTemplates({root = process.cwd(), check = false, looku
       if (!file.startsWith(resolve(srcDir, id) + '/')) { fail(`${item.image} 不在模板目录里`); continue; }
       let input;
       try {
-        if ((await stat(file)).size > MAX_IMAGE_BYTES) { fail(`${item.image} 超过 2MB，请先压缩`); continue; }
+        if ((await stat(file)).size > MAX_IMAGE_BYTES) { fail(`${item.image} 超过 500KB，先运行 bun run images ${id} 压缩`); continue; }
         input = await readFile(file);
         // Logos (SVG) keep their shape with some padding; photos fill the square.
         const isLogo = /\.svg$/i.test(item.image), inner = isLogo ? Math.round(IMAGE_SIZE * .78) : IMAGE_SIZE, pad = (IMAGE_SIZE - inner) / 2;
@@ -95,6 +95,10 @@ export async function buildTemplates({root = process.cwd(), check = false, looku
       delete item.image;
     }
 
+    // Image sources must be stated (CONTRIBUTING.md): rights to redistribute are on the contributor.
+    if (template.items.some(item => item.asset) && !await stat(join(srcDir, id, 'NOTICE.md')).then(() => true, () => false)) {
+      fail('用了图片就要在模板目录里放一个 NOTICE.md，写明图片来源（参考 templates/programming-languages/NOTICE.md）');
+    }
     if (!check) { await writeFile(join(outDir, `${id}.json`), JSON.stringify(template)); written.add(`${id}.json`); }
     // The account behind the UID decides the displayed name; `author` is only a fallback when the lookup fails.
     const found = !check && template.bilibili ? await account(template.bilibili) : null;
@@ -125,6 +129,12 @@ if (import.meta.main) {
   warnings.forEach(w => console.warn(`⚠️ ${w}`));
   if (errors.length) {
     console.error(`❌ ${errors.length} 个问题：\n${errors.map(e => `  - ${e}`).join('\n')}`);
+    // In GitHub Actions, also emit annotations so each problem shows next to the file in the PR.
+    if (process.env.GITHUB_ACTIONS) for (const e of errors) {
+      const [, dir = 'templates', msg = e] = /^(templates\/[^:]+): (.*)$/s.exec(e) ?? [];
+      const file = await stat(join(dir, 'template.json')).then(() => `${dir}/template.json`, () => dir);
+      console.log(`::error file=${file},title=模板检查::${msg.replace(/%/g, '%25').replace(/\r?\n/g, '%0A')}`);
+    }
     process.exit(1);
   }
   console.log(`✅ ${index.length} 个社区模板${check ? '校验通过' : '已生成'}：${index.map(t => t.id).join(', ')}`);
