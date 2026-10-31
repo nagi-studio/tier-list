@@ -9,15 +9,17 @@ import Modal from '@/components/Modal';
 import Logo from '@/components/Logo';
 import {community, creditFor, loadCommunity} from '@/lib/community';
 import {flagships} from '@/lib/catalog';
-import {REPO_URL} from '@/lib/constants';
-import {fromCatalog, replaceContestants} from '@/lib/board';
+import {REPO_URL, TOY_AUTHOR} from '@/lib/constants';
+import {aiTemplate} from '@/lib/builtins';
+import {replaceContestants} from '@/lib/board';
 import {templateToBoard} from '@/lib/template';
 import {toast} from '@/lib/toast';
 import {openVideo} from '@/lib/toySdk';
 import {dispatch, getEditorState} from '@/store/editor';
 
 const BUILTIN = [
-  {key: 'ai', title: 'AI 大模型', description: `当下 AA 榜单前列的 ${flagships.length} 个旗舰模型`, preview: flagships.slice(0, 5)},
+  {key: 'ai', title: 'AI 大模型', description: `当下 AA 榜单前列的 ${flagships.length} 个旗舰模型`, preview: flagships.slice(0, 5), count: flagships.length,
+    author: TOY_AUTHOR.name, bilibili: TOY_AUTHOR.bilibili, avatar: TOY_AUTHOR.avatar},
   {key: 'blank', title: '空白', description: '从零开始，排什么都行', preview: [{name: '✦', emoji: '✦'}]},
 ];
 
@@ -47,8 +49,7 @@ export default function TemplateDialog({onClose}: DialogProps) {
   const [loading, setLoading] = useState<TemplateId | null>(null);
   function useBuiltin(t: typeof BUILTIN[number]) {
     const board = getEditorState().board;
-    const pool = t.key === 'ai' ? flagships.map(fromCatalog) : [];
-    dispatch({type: 'loadTemplate', board: replaceContestants({board, title: t.key === 'ai' ? '2026 AI 大模型排位' : '我的 Tier List', pool})});
+    dispatch({type: 'loadTemplate', board: t.key === 'ai' ? aiTemplate(board) : replaceContestants({board, title: '我的 Tier List', pool: []})});
     onClose();
   }
   async function useCommunity(t: CommunityEntry) {
@@ -63,7 +64,7 @@ export default function TemplateDialog({onClose}: DialogProps) {
   return <Modal title="模板中心" onClose={onClose} className="template-modal">
     <p className="modal-description">换模板会替换当前的等级和选手，可以撤销。</p>
     <h3 className="section-title">内置</h3>
-    <div className="template-grid">{BUILTIN.map(t => <TemplateCard key={t.key} title={t.title} description={t.description} preview={t.preview} onClick={() => useBuiltin(t)}/>)}</div>
+    <div className="template-grid">{BUILTIN.map(({key, ...t}) => <TemplateCard key={key} {...t} onClick={() => useBuiltin({key, ...t})}/>)}</div>
     <h3 className="section-title">社区模板 <span className="count">{community.length}</span></h3>
     <div className="template-grid">{community.map(t => <TemplateCard key={t.id} {...t} busy={loading === t.id} onClick={() => useCommunity(t)}/>)}</div>
     <a className="contribute" href={`${REPO_URL}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer"><ExternalLink size={15}/>投稿你的模板：GitHub Nagi-Studio/tier-list</a>

@@ -1,5 +1,4 @@
 import {useState} from 'react';
-import type {Ref} from 'react';
 import type {CollisionDetection, DndContextProps, UniqueIdentifier} from '@dnd-kit/core';
 import type {Board as BoardState, Item, Row} from '@/lib/board';
 import {createDragParser, rowDragId} from './drag';
@@ -13,9 +12,7 @@ import TierRow from './TierRow';
 import Pool from './Pool';
 import Trash from './Trash';
 import {TileFace} from './Tile';
-import CanvasFooter from './CanvasFooter';
 import CreditBar from './CreditBar';
-import {cx} from '@/lib/utils';
 import {allItems, MAX_ROWS} from '@/lib/board';
 import {deleteRow, endItemDrag} from '@/lib/actions';
 import {dispatch} from '@/store/editor';
@@ -44,7 +41,7 @@ function collisionFor(parse: ReturnType<typeof createDragParser>): CollisionDete
 const measuring = {droppable: {strategy: MeasuringStrategy.Always}};
 
 /** The exportable tier list plus the pool, sharing one drag context. `ref` points at the export canvas. */
-export default function Board({ref, board, dragId, touch, exporting, onEditItem, onEditRow, onNewItem}: {ref: Ref<HTMLDivElement>; board: BoardState; dragId?: ItemId; touch: boolean; exporting: boolean; onEditItem: (item: Item) => void; onEditRow: (row: Row) => void; onNewItem: (target: ContainerId) => void}) {
+export default function Board({board, dragId, touch, onEditItem, onEditRow, onNewItem}: {board: BoardState; dragId?: ItemId; touch: boolean; onEditItem: (item: Item) => void; onEditRow: (row: Row) => void; onNewItem: (target: ContainerId) => void}) {
   const [source, setSource] = useState<DragSource | null>(null);
   const parse = createDragParser(board);
   const collision = collisionFor(parse);
@@ -91,7 +88,7 @@ export default function Board({ref, board, dragId, touch, exporting, onEditItem,
       setSource(null);
     }}
     onDragCancel={() => { dispatch({type: 'dragCancel'}); setSource(null); }}>
-    <div className={cx('export-canvas', exporting && 'is-exporting')} ref={ref}>
+    <div className="export-canvas">
       <div className="board-heading">
         <input className="board-title" aria-label="榜单标题" value={board.title} maxLength={160} placeholder="给榜单起个标题" onChange={e => dispatch({type: 'setTitle', title: e.target.value})}/>
         <span className="board-meta">{ranked} / {ranked + board.pool.length} 已排</span>
@@ -102,7 +99,6 @@ export default function Board({ref, board, dragId, touch, exporting, onEditItem,
           {board.rows.map((row, index) => <TierRow key={row.id} row={row} index={index} total={board.rows.length} onEditItem={onEditItem} onEditRow={() => onEditRow(row)} onAddItem={() => onNewItem(row.id)}/>)}
         </SortableContext>
       </div>
-      <CanvasFooter credit={board.credit} showQr={board.exportQr !== false}/>
     </div>
     <button type="button" className="add-row" onClick={() => dispatch({type: 'addRow'})} disabled={board.rows.length >= MAX_ROWS}><Plus size={15}/>添加等级</button>
     <Trash dragKind={source?.kind}/>

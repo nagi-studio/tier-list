@@ -24,6 +24,6 @@ export default function Tile({item, onEdit}: {item: BoardItem; onEdit: (item: Bo
     <button type="button" className="tile-main" aria-label={`编辑 ${item.name}`} title={item.provider ? `${item.provider} · ${item.name}` : item.name} onClick={() => onEdit(item)}>
       <Logo item={item}/><span className="tile-name">{item.name}</span>
     </button>
-    <button type="button" className="drag-handle no-export" aria-label={`拖动 ${item.name}`} {...attributes} onKeyDown={e => listeners?.onKeyDown?.(e)}><GripVertical size={14}/></button>
+    <button type="button" className="drag-handle" aria-label={`拖动 ${item.name}`} {...attributes} onKeyDown={e => listeners?.onKeyDown?.(e)}><GripVertical size={14}/></button>
   </div></TileMenu>;
 }

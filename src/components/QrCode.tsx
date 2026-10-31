@@ -2,17 +2,17 @@ import {useMemo} from 'react';
 import {encode} from 'uqr';
 
 /**
- * QR code drawn as one SVG path, with the app mark in the middle. Uses the highest error correction (H, ~30%)
- * so the center logo (~5% of the area) never breaks scanning. Rendered locally: works outside the Bilibili SDK.
+ * QR code drawn as one SVG path, with the app mark in the middle (~5% of the area, well inside what
+ * Q/H error correction recovers). Rendered locally: works outside the Bilibili SDK.
+ * Quiet zone: 4 modules is the spec; anything under 2 stops decoding once screenshots get recompressed.
  */
-export default function QrCode({value, size = 96}: {value: string; size?: number}) {
+export default function QrCode({value, size = 96, ecc = 'Q', border = 4}: {value: string; size?: number; ecc?: 'M' | 'Q' | 'H'; border?: number}) {
   const {path, n} = useMemo(() => {
-    // A 2-module quiet zone: with 1 module, downscaled or recompressed screenshots stop decoding.
-    const {data, size: n} = encode(value, {ecc: 'H', border: 2});
+    const {data, size: n} = encode(value, {ecc, border});
     let d = '';
     data.forEach((row, y) => row.forEach((on, x) => { if (on) d += `M${x} ${y}h1v1h-1z`; }));
     return {path: d, n};
-  }, [value]);
+  }, [value, ecc, border]);
   const logo = n * .22, at = (n - logo) / 2, bar = logo / 7;
   return <svg className="qr" width={size} height={size} viewBox={`0 0 ${n} ${n}`} shapeRendering="crispEdges" role="img" aria-label="二维码">
     <rect width={n} height={n} fill="#fff"/>

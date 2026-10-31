@@ -14,6 +14,7 @@ import {join, relative, resolve} from 'node:path';
 import sharp from 'sharp';
 import {normalizeTemplate} from '../src/lib/template.ts';
 import {templateIdSchema} from '../src/lib/ids';
+import {AI_TEMPLATE_ID} from '../src/lib/constants.ts';
 import {brandKeys} from '../src/components/BrandAvatar.tsx';
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024, IMAGE_SIZE = 128;
@@ -48,6 +49,7 @@ export async function buildTemplates({root = process.cwd(), check = false, looku
     const parsedId = templateIdSchema.safeParse(rawId);
     if (!parsedId.success) { fail('文件夹名只能用小写字母、数字和短横线（2–40 个字符），例如 milk-tea'); continue; }
     const id = parsedId.data;
+    if (id === AI_TEMPLATE_ID) { fail(`${AI_TEMPLATE_ID} 是内置模板的名字，换一个文件夹名`); continue; }
     let raw: unknown;
     try { raw = JSON.parse(await readFile(join(srcDir, id, 'template.json'), 'utf8')); }
     catch (e) { fail(z.object({code: z.literal('ENOENT')}).safeParse(e).success ? '缺少 template.json' : `template.json 不是合法 JSON：${e instanceof Error ? e.message : String(e)}`); continue; }

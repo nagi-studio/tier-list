@@ -19,27 +19,10 @@
 .row-add{width:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--dim);opacity:0;transition:opacity .15s,color .15s,background .15s}
 .tier-row:hover .row-add,.row-add:focus-visible{opacity:1}
 .row-add:hover{color:var(--text);background:var(--surface)}
-.canvas-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-size:12px;font-weight:600;color:var(--dim)}
-.canvas-credit{color:var(--muted)}
-.canvas-brand{display:flex;align-items:center;gap:12px;margin-left:auto}
-.canvas-brand-text{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.canvas-brand-text>span{display:flex;align-items:center;gap:7px}
-.canvas-brand-text small{display:none;font-size:11px;font-weight:500;color:var(--dim)}
-.export-only{display:none}
-/* While exporting: the QR code appears and the footer grows to frame it. */
-.is-exporting .export-only{display:flex}
-.is-exporting .with-qr .canvas-brand-text small{display:block}
-.is-exporting .with-qr .canvas-brand-text>span{font-size:14px;color:var(--text)}
-.is-exporting .canvas-credit{font-size:14px}
-.qr{display:block}
-/* Rounded white plate around the code; the radius must stay outside the quiet zone. */
-.export-only:has(.qr){padding:4px;border-radius:10px;background:#fff}
-
 /* "模板来自 @x [去关注]" under the title, on screen only */
 .credit-bar{display:flex;align-items:center;gap:8px;margin:-6px 0 14px;font-size:13px;color:var(--muted)}
 .credit-bar img{width:22px;height:22px;border-radius:50%}
 .credit-bar strong{color:var(--text);font-weight:650}
-.canvas-foot .mark{height:11px;gap:1.5px}.canvas-foot .mark i{width:3px}.canvas-foot .mark i:nth-child(1){height:11px}.canvas-foot .mark i:nth-child(2){height:7px}.canvas-foot .mark i:nth-child(3){height:4px}
 .add-row{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;height:40px;margin:10px 0 18px;border:1px dashed var(--line-strong);border-radius:12px;font-size:13px;font-weight:550;color:var(--muted);transition:color .15s,border-color .15s,background .15s}
 .add-row:hover:not(:disabled){color:var(--text);border-color:var(--muted);background:var(--panel)}
 

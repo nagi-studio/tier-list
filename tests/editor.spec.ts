@@ -120,3 +120,18 @@ test('template credit, follow link, export QR code and ?tpl= deep link',async({p
  expect((await state(page)).credit?.bilibili).toBe('312249633');
  expect(new URL(page.url()).searchParams.has('tpl')).toBe(false);
 });
+test('the Toy author is followable and credited on the built-in AI template',async({page})=>{
+ await expect(page.locator('.toy-author .follow-btn')).toHaveAttribute('href','https://space.bilibili.com/312249633');
+ expect((await state(page)).credit).toEqual({template:'ai-models',author:'卡普迪姆',bilibili:'312249633'});
+ await expect(page.locator('.credit-bar')).toContainText('模板来自 @卡普迪姆');
+ const dl=page.waitForEvent('download');await page.getByRole('button',{name:'导出图片'}).click();const file='/tmp/tier-list-ai.png';await (await dl).saveAs(file);
+ const {data,info}=await sharp(file).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+ expect(jsQR(new Uint8ClampedArray(data),info.width,info.height)?.data).toBe('https://www.bilibili.com/toy/tier-list/?tpl=ai-models');
+ expect(info.width).toBe(1080);
+ // A blank board drops the credit; the AI deep link brings it back
+ await page.getByRole('button',{name:'更多操作'}).click();await page.getByRole('menuitem',{name:'模板中心…'}).click();await page.getByRole('button',{name:/空白/}).click();
+ expect((await state(page)).credit).toBeUndefined();
+ await page.goto('/?tpl=ai-models');await page.getByRole('button',{name:'打开',exact:true}).click();
+ await expect.poll(async()=>(await state(page)).credit?.template).toBe('ai-models');
+ expect((await state(page)).pool.length).toBeGreaterThan(5);
+});

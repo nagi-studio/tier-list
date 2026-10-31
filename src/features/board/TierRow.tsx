@@ -16,6 +16,6 @@ export default function TierRow({row, index, total, onEditRow, onEditItem, onAdd
       title="点击编辑，按住拖动换位置" aria-label={`编辑等级 ${row.label}`} onClick={onEditRow}
       onMouseDown={e => listeners?.onMouseDown?.(e)} onTouchStart={e => listeners?.onTouchStart?.(e)}>{row.label}</button>
     <DropZone id={row.id} items={row.items} onEdit={onEditItem} className="tier-items"/>
-    <button type="button" className="row-add no-export" aria-label={`添加到 ${row.label}`} title="在这一级新建选手" onClick={onAddItem}><Plus size={16}/></button>
+    <button type="button" className="row-add" aria-label={`添加到 ${row.label}`} title="在这一级新建选手" onClick={onAddItem}><Plus size={16}/></button>
   </div></RowMenu>;
 }

@@ -1,7 +1,6 @@
 import {createRoot} from 'react-dom/client';
 import App from './App';
-import {initialState} from './lib/board';
-import {models} from './lib/catalog';
+import {starterBoard} from './lib/builtins';
 import {initEditorStore, dispatch, STORAGE_KEY} from './store/editor';
 import {readIncomingShare} from './lib/share';
 import './styles/index.css';
@@ -9,7 +8,7 @@ import './styles/index.css';
 initEditorStore({
   storage: localStorage,
   key: STORAGE_KEY,
-  fallback: () => initialState(models),
+  fallback: starterBoard,
   onBoardChange: board => { document.documentElement.dataset.theme = board.theme === 'light' ? 'light' : 'dark'; },
 });
 

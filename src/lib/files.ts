@@ -9,12 +9,12 @@ function download(href: string, name: string) {
   a.click();
 }
 
-/** Render a DOM node to PNG, skipping elements marked .no-export. */
+/** Render a DOM node to PNG at 2× (the share card is 540 CSS px wide → 1080 px). */
 export async function exportPng(node: HTMLElement, title: string) {
   await document.fonts.ready;
   await Promise.all([...node.querySelectorAll('img')].map(img => img.decode().catch(() => {})));
   const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-  download(await toPng(node, {pixelRatio: 2, backgroundColor, filter: n => !n.classList?.contains('no-export')}), `${title || 'tier-list'}.png`);
+  download(await toPng(node, {pixelRatio: 2, backgroundColor}), `${title || 'tier-list'}.png`);
 }
 
 export function exportJson(board: Board) {
