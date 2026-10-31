@@ -10,8 +10,9 @@
     "test": "bun test .test",
     "test:e2e": "playwright test",
     "templates": "bun scripts/build-templates.ts",
-    "check": "bun run typecheck && bun scripts/build-templates.ts --check && bun test .test",
-    "typecheck": "tsc --noEmit"
+    "check": "bun run typecheck && bun scripts/gen-schema.ts --check && bun scripts/build-templates.ts --check && bun test .test",
+    "typecheck": "tsc --noEmit",
+    "schema": "bun scripts/gen-schema.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

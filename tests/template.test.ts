@@ -78,3 +78,31 @@ test('build script compiles images to webp assets and reports bad templates', as
   assert.ok(bad.errors.some(e => e.includes('Bad_Name') && e.includes('文件夹名')));
   assert.ok(bad.errors.some(e => e.includes('找不到图片')));
 });
+
+test('template boundary preserves normalization and Chinese paths for nested contributor errors', () => {
+  const good = must(normalizeTemplate({
+    title: '  奶茶  ', description: '  ', author: null, bilibili: 123,
+    tiers: ['  最爱  ', {label: '普通', color: '#ABCDEF'}],
+    items: [{name: '  蜜雪  ', emoji: ' 🍦 ', tier: 1}],
+  }).template);
+  assert.equal(good.title, '奶茶');
+  assert.equal(good.bilibili, '123');
+  assert.equal('description' in good, false);
+  assert.deepEqual(good.tiers, [{label: '最爱', color: '#ff7f7f'}, {label: '普通', color: '#abcdef'}]);
+  assert.deepEqual(good.items, [{name: '蜜雪', emoji: '🍦', tier: 1}]);
+  assert.deepEqual(normalizeTemplate({...sample, tiers: [{label: 9}]}).errors, ['tiers[0].label 必须是字符串']);
+  assert.deepEqual(normalizeTemplate({...sample, tiers: [{label: 'S', color: 'red'}]}).errors, ['tiers[0].color 必须是 #RRGGBB 格式']);
+  assert.deepEqual(normalizeTemplate({...sample, items: [{name: 'x', tier: 5}]}).errors, ['items[0].tier 必须是 0 到 4 的整数']);
+  assert.deepEqual(normalizeTemplate({...sample, items: [{name: 'x', icon: 'BAD'}]}).errors, ['items[0].icon「BAD」不是可用的品牌 Logo']);
+});
+
+test('template boundary rejects unsafe fields, out-of-range placements and malformed compact shares', async () => {
+  for (const fields of [
+    {name: 'x', asset: '../logo.webp'}, {name: 'x', tier: -1}, {name: 'x', tier: 1.5},
+    {name: 'x', image: 'images/../logo.png'}, {name: 'x', icon: 'bad/logo'},
+    {name: 'x'.repeat(61)}, {name: 'x', emoji: 'x'.repeat(9)},
+  ]) assert.equal(normalizeTemplate({...sample, items: [fields]}, {allowImages: true}).template, null);
+  const malformed: unknown[] = [null, {t: 'x', r: 'cn', i: []}, {t: 'x', r: [['S', 'ff7f7f']], i: [[true, '', '', '', 0]]}];
+  for (const value of malformed) await assert.rejects(decodeShare(`j${Buffer.from(JSON.stringify(value)).toString('base64url')}`), /损坏/);
+  await assert.rejects(decodeShare(null), /不完整/);
+});
