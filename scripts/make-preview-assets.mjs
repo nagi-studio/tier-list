@@ -6,14 +6,14 @@ await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:5174/');
 await page.getByRole('textbox',{name:'榜单标题'}).waitFor();
 await page.evaluate(()=>{
  const s=JSON.parse(localStorage.getItem('tier-studio-v1'));
- s.title='万物皆可排 · Tier Studio';s.subtitle='示例布局 · 随手拖一拖，排出你的标准。';
- const pool=[...s.pool];s.rows.forEach((r,i)=>r.items=pool.slice(i*2,i*2+2));s.pool=pool.slice(12);
+ s.title='2026 AI 大模型排位';
+ const pool=[...s.pool];[[0,1],[2,3,4],[5,6,8],[9,7],[10,11],[12,13]].forEach((ix,i)=>s.rows[i].items=ix.map(j=>pool[j]).filter(Boolean));s.pool=[];
  localStorage.setItem('tier-studio-v1',JSON.stringify(s));
 });
 await page.reload();await page.getByRole('textbox',{name:'榜单标题'}).waitFor();
-await page.evaluate(()=>{const canvas=document.querySelector('.export-canvas');document.body.replaceChildren(canvas);Object.assign(document.body.style,{padding:'48px',height:'900px',background:'#111214',display:'flex',alignItems:'center'});Object.assign(canvas.style,{width:'1104px',flexShrink:0});document.querySelectorAll('.row-tools').forEach(e=>e.remove());});
+await page.evaluate(()=>{const canvas=document.querySelector('.export-canvas');document.body.replaceChildren(canvas);Object.assign(document.body.style,{padding:'48px',height:'900px',background:'#0c0d10',display:'flex',alignItems:'center'});Object.assign(canvas.style,{width:'1104px',flexShrink:0});document.querySelectorAll('.no-export').forEach(e=>e.remove());});
 await page.screenshot({path:'./poster.png'});
-const icon=await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');ctx.fillStyle='#111214';ctx.fillRect(0,0,256,256);['#d6f58a','#b4cd76','#849750'].forEach((color,i)=>{ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(55+i*52,58+i*38,36,140-i*38,5);ctx.fill();});return canvas.toDataURL('image/png').split(',')[1];});
+const icon=await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');ctx.fillStyle='#0c0d10';ctx.fillRect(0,0,256,256);['#fb7299','#c95a7a','#8f4057'].forEach((color,i)=>{ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(55+i*52,58+i*38,36,140-i*38,5);ctx.fill();});return canvas.toDataURL('image/png').split(',')[1];});
 await writeFile('icon.png',Buffer.from(icon,'base64'));
 await mkdir('artifacts',{recursive:true});
 await browser.close();

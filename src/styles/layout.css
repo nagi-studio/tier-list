@@ -1,0 +1,19 @@
+/* Shell */
+.app-shell{max-width:1680px;margin:0 auto}
+.site-header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid var(--line)}
+.wordmark{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;letter-spacing:.5px}
+.mark{display:inline-flex;align-items:flex-end;gap:2px;height:18px}
+.mark i{display:block;width:5px;border-radius:2px;background:var(--accent)}
+.mark i:nth-child(1){height:18px}.mark i:nth-child(2){height:12px;opacity:.7}.mark i:nth-child(3){height:7px;opacity:.45}
+.header-right{display:flex;align-items:center;gap:10px}
+.save-state{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
+.dot{width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px #4ade8022}
+.save-state.warn .dot{background:#fbbf24;box-shadow:0 0 0 3px #fbbf2422}
+
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start;padding:20px 32px 48px}
+.editor{min-width:0}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.toolbar-actions{display:flex;align-items:center;gap:4px}
+.toolbar-actions .btn{margin-left:6px}
+.mobile-library{display:none!important}
+

@@ -1,0 +1,48 @@
+/* Board */
+.export-canvas{background:var(--bg);padding:20px;border:1px solid var(--line);border-radius:16px}
+.board-heading{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.board-title{flex:1;min-width:0;font-size:24px;font-weight:800;letter-spacing:-.3px;line-height:1.3;background:transparent;border:0;border-radius:8px;padding:4px 8px;margin-left:-8px;outline:none;text-overflow:ellipsis}
+.board-title:hover{background:var(--surface)}
+.board-title:focus{background:var(--surface);box-shadow:0 0 0 2px var(--accent)}
+.board-title::placeholder{color:var(--dim)}
+.board-meta{font-size:12.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tier-board{display:flex;flex-direction:column;gap:6px}
+.tier-row{display:flex;min-height:84px;background:var(--panel);border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
+.tier-label{width:92px;min-width:92px;display:flex;align-items:center;justify-content:center;padding:10px 8px;color:#1b1b1f;font-size:30px;font-weight:900;line-height:1.15;text-align:center;overflow-wrap:anywhere;transition:filter .15s}
+.tier-label:hover{filter:brightness(1.07) saturate(1.05)}
+.tier-label.long-label{font-size:18px;font-weight:800}
+.tier-items{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-content:center;gap:8px;padding:10px 12px;transition:background .15s,box-shadow .15s}
+.drop-active{background:var(--accent-soft);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}
+.row-add{width:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--dim);opacity:0;transition:opacity .15s,color .15s,background .15s}
+.tier-row:hover .row-add,.row-add:focus-visible{opacity:1}
+.row-add:hover{color:var(--text);background:var(--surface)}
+.canvas-foot{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin-top:14px;font-size:12px;font-weight:600;color:var(--dim)}
+.canvas-foot .mark{height:11px;gap:1.5px}.canvas-foot .mark i{width:3px}.canvas-foot .mark i:nth-child(1){height:11px}.canvas-foot .mark i:nth-child(2){height:7px}.canvas-foot .mark i:nth-child(3){height:4px}
+.add-row{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;height:40px;margin:10px 0 18px;border:1px dashed var(--line-strong);border-radius:12px;font-size:13px;font-weight:550;color:var(--muted);transition:color .15s,border-color .15s,background .15s}
+.add-row:hover:not(:disabled){color:var(--text);border-color:var(--muted);background:var(--panel)}
+
+/* Tiles */
+.logo{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:24%;overflow:hidden;background:#fff;color:#222;line-height:1;font-weight:700}
+.logo img{width:100%;height:100%;object-fit:cover;display:block}
+.logo.mono{background:var(--surface-hover);color:var(--text)}
+.logo.brand{background:transparent}
+.brand-avatar{display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;pointer-events:none}
+.tile{position:relative;display:inline-flex;align-items:center;max-width:100%;background:var(--tile);border-radius:10px;box-shadow:0 0 0 1px var(--line),0 1px 2px #0002;user-select:none;-webkit-user-select:none;transition:background .15s,box-shadow .15s,transform .15s}
+.tile:hover{background:var(--tile-hover);box-shadow:0 0 0 1px var(--line-strong),0 4px 12px -4px #0005}
+.tile-main{display:flex;align-items:center;gap:9px;min-width:0;padding:6px 2px 6px 6px;text-align:left;border-radius:10px}
+.tile-name{font-size:13.5px;font-weight:600;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drag-handle{display:flex;align-items:center;justify-content:center;width:22px;align-self:stretch;color:var(--dim);cursor:grab;touch-action:none;border-radius:0 10px 10px 0;opacity:.6}
+.tile:hover .drag-handle{opacity:1}
+.drag-handle:active{cursor:grabbing}
+.tile.dragging{opacity:.25}
+.tile.overlay{background:var(--tile-hover);box-shadow:0 0 0 2px var(--accent),0 20px 40px -8px #000a;transform:rotate(-2deg) scale(1.04);cursor:grabbing}
+
+/* Pool */
+.pool{background:var(--panel);border-radius:16px;padding:18px;box-shadow:0 0 0 1px var(--line)}
+.pool-heading{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.pool h2{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:750}
+.pool .hint{flex:1;font-size:12.5px;color:var(--dim)}
+.pool-items{min-height:96px;display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:2px;border-radius:12px;transition:background .15s,box-shadow .15s}
+.pool-items .tile{background:var(--surface)}
+.pool-empty{flex:1;min-height:92px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--line-strong);border-radius:12px;color:var(--muted);font-size:13.5px}
+

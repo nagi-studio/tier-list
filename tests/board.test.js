@@ -1,6 +1,6 @@
 import {test} from 'bun:test';
 import assert from 'node:assert/strict';
-import {initialState,moveItem,allItems,validateBoard,applyTierPreset} from '../src/state.mjs';
+import {initialState,moveItem,allItems,validateBoard,applyTierPreset} from '../src/lib/board.js';
 const start=()=>initialState(['a','b','c'].map(id=>({id,name:id,icon:'openai'})));
 test('cross-tier moves preserve every item exactly once and do not mutate source',()=>{const s=start(),id=s.pool[0].id;const next=moveItem(s,id,s.rows[0].id);assert.equal(s.pool.length,3);assert.equal(next.pool.length,2);assert.equal(next.rows[0].items[0].id,id);assert.equal(new Set(allItems(next).map(i=>i.id)).size,3);assert.ok(validateBoard(next));});
 test('same-container sorting supports forward and backward moves',()=>{const s=start();const next=moveItem(s,s.pool[0].id,'pool',s.pool[2].id);assert.deepEqual(next.pool.map(i=>i.name),['b','c','a']);const back=moveItem(next,next.pool[2].id,'pool',next.pool[0].id);assert.deepEqual(back.pool.map(i=>i.name),['a','b','c']);});

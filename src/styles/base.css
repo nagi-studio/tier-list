@@ -1,0 +1,41 @@
+/* Base */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:disabled{cursor:default;opacity:.35}
+a{color:inherit;text-decoration:none}
+h1,h2,p{margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.spacer{flex:1}
+.count{font-size:12px;font-weight:500;color:var(--muted);background:var(--surface);border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums}
+
+/* Buttons */
+.btn,.btn[data-slot=button]{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:9px;font-size:13.5px;font-weight:600;white-space:nowrap;border:1px solid transparent;transition:background .15s,border-color .15s,transform .1s}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn.primary{background:var(--accent);color:var(--accent-text)}
+.btn.primary:hover:not(:disabled){background:var(--accent-hover)}
+.btn.subtle{background:var(--surface);border-color:var(--line);color:var(--text)}
+.btn.subtle:hover:not(:disabled){background:var(--surface-hover)}
+.btn.ghost{background:transparent;color:var(--muted)}
+.btn.ghost:hover:not(:disabled){background:var(--surface)}
+.icon-btn{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;color:var(--muted);flex-shrink:0;transition:background .15s,color .15s}
+.icon-btn:hover:not(:disabled){background:var(--surface-hover);color:var(--text)}
+.danger{color:#ff7b86!important}
+.link-btn{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:var(--accent)}
+.link-btn:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* Segmented control (ToggleGroup / Tabs list) */
+.segmented{display:inline-flex;padding:3px;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.segmented.full{display:flex}
+.segmented>button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 12px;border-radius:7px;font-size:13px;font-weight:550;color:var(--muted);white-space:nowrap;transition:background .15s,color .15s}
+.segmented>button:hover{color:var(--text)}
+.segmented>button[data-state=on],.segmented>button[data-state=active]{background:var(--raised);color:var(--text);box-shadow:0 1px 2px #0003,0 0 0 1px var(--line)}
+.segmented>button span{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:100;padding:11px 18px;border-radius:999px;background:var(--text);color:var(--bg);font-size:13.5px;font-weight:600;box-shadow:0 12px 30px -6px #0008;max-width:calc(100vw - 32px);animation:toast .2s ease-out}
+@keyframes toast{from{opacity:0;transform:translate(-50%,8px)}}
+

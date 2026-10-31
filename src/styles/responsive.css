@@ -1,0 +1,41 @@
+/* Responsive */
+@media(max-width:1200px){.workspace{grid-template-columns:minmax(0,1fr) 320px;padding:16px 20px 40px;gap:18px}.site-header{padding:0 20px}}
+@media(max-width:900px){
+  .workspace{display:block}
+  .mobile-library{display:inline-flex!important}
+  .row-add{opacity:1}
+}
+@media(max-width:600px){
+  body{font-size:13px}
+  .site-header{height:54px;padding:0 14px}
+  .wordmark{font-size:16px}
+  .save-state{font-size:11.5px}
+  .workspace{padding:12px 12px 32px}
+  .toolbar{flex-wrap:wrap;gap:8px}
+  .toolbar .segmented{order:2;width:100%}
+  .toolbar .segmented>button{padding:0 6px}
+  .toolbar-actions{width:100%}
+  .toolbar-actions .mobile-library{margin-left:auto}
+  .toolbar-actions .btn{padding:0 11px;font-size:13px}
+  .export-canvas{padding:12px;border-radius:14px}
+  .board-title{font-size:18px}
+  .board-meta{font-size:11.5px}
+  .tier-row{min-height:66px;border-radius:10px}
+  .tier-label{width:56px;min-width:56px;font-size:22px;padding:6px 4px}
+  .tier-label.long-label{font-size:13px}
+  .tier-items{padding:7px;gap:6px}
+  .row-add{width:28px}
+  .tile-main{gap:6px;padding:5px 0 5px 5px}
+  .tile .logo{width:22px!important;height:22px!important}
+  .tile .brand-avatar,.tile .brand-avatar svg{width:22px!important;height:22px!important}
+  .tile-name{font-size:12px;max-width:120px}
+  .drag-handle{width:18px}
+  .pool{padding:14px 12px;border-radius:14px}
+  .pool-heading{flex-wrap:wrap}
+  .pool .hint{order:3;flex-basis:100%}
+  .pool .btn{margin-left:auto;height:32px;font-size:12.5px}
+  .modal[data-slot=dialog-content]{padding:18px;border-radius:16px}
+  .hero-name input,.emoji-input,.search-box input{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+
