@@ -17,7 +17,7 @@ test('desktop: drag across tiers, edit, undo, templates, persistence and exports
  await expect.poll(async()=>must((await state(page)).rows[0]).items.length).toBe(1);
  await page.getByRole('button',{name:'撤销',exact:true}).click();await expect.poll(async()=>(await state(page)).pool.length).toBe(before.pool.length);
  await page.getByRole('button',{name:'自定义选手',exact:true}).click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('自定义选手测试');await page.getByRole('radiogroup',{name:'放到哪里'}).getByRole('radio',{name:must(before.rows[1]).label,exact:true}).click();await page.getByRole('button',{name:'添加选手',exact:true}).click();await expect.poll(async()=>must(must((await state(page)).rows[1]).items[0])?.name).toBe('自定义选手测试');
- await page.getByRole('radio',{name:'从夯到拉'}).click();await expect(page.locator('.tier-label').first()).toHaveText('夯');await expect(page.locator('.tier-label')).toHaveCount(5);
+ await page.getByRole('button',{name:'等级预设'}).click();await page.getByRole('menuitemradio',{name:'从夯到拉'}).click();await expect(page.locator('.tier-label').first()).toHaveText('夯');await expect(page.locator('.tier-label')).toHaveCount(5);
  await page.reload();await expect(page.locator('.tier-label').first()).toHaveText('夯');await expect(page.getByRole('button',{name:'编辑 自定义选手测试',exact:true})).toBeVisible();
  const json=page.waitForEvent('download');await page.getByRole('button',{name:'更多操作'}).click();await page.getByRole('menuitem',{name:'保存 JSON'}).click();const jf=await json;expect(jf.suggestedFilename()).toBe('tier-studio.json');await jf.saveAs('artifacts/tier-studio-export.json');
  await page.getByRole('button',{name:`编辑 ${first.name}`,exact:true}).click();await page.getByRole('radiogroup',{name:'放到哪里'}).getByRole('radio',{name:must((await state(page)).rows[0]).label,exact:true}).click();await page.getByRole('button',{name:'保存',exact:true}).click();await expect(page.locator('.tier-board .brand-avatar')).toHaveCount(1);
@@ -77,7 +77,7 @@ test('right-click menus and the trash',async({page})=>{
  await expect.poll(async()=>(await state(page)).rows.map(r=>r.label).join(',')).toBe('S+,S,B,C');
 });
 test('community template with logos, then share link round-trip',async({page,browser})=>{
- await page.getByRole('button',{name:'更多操作'}).click();await page.getByRole('menuitem',{name:'模板中心…'}).click();
+ await page.getByRole('button',{name:'模板中心'}).click();
  await page.getByRole('button',{name:/编程语言排位/}).click();
  await expect.poll(async()=>(await state(page)).title).toBe('编程语言排位');
  const s=await state(page);expect(s.pool.length).toBe(16);expect(must(s.pool[0]).asset).toMatch(/^community\/programming-languages\/[a-f0-9]{12}\.webp$/);
@@ -102,7 +102,7 @@ test('sharing is blocked when the platform content check rejects the text',async
 });
 test('template credit, follow link, export QR code and ?tpl= deep link',async({page})=>{
  const decodeQr=async(file:string)=>{const {data,info}=await sharp(file).ensureAlpha().raw().toBuffer({resolveWithObject:true});return jsQR(new Uint8ClampedArray(data),info.width,info.height)?.data;};
- await page.getByRole('button',{name:'更多操作'}).click();await page.getByRole('menuitem',{name:'模板中心…'}).click();
+ await page.getByRole('button',{name:'模板中心'}).click();
  await expect(page.locator('.template-author').first()).toContainText('卡普迪姆');
  await page.getByRole('button',{name:/编程语言排位/}).click();
  await expect(page.locator('.credit-bar')).toContainText('模板来自 @卡普迪姆');
@@ -129,7 +129,7 @@ test('the Toy author is followable and credited on the built-in AI template',asy
  expect(jsQR(new Uint8ClampedArray(data),info.width,info.height)?.data).toBe('https://www.bilibili.com/toy/tier-list/?tpl=ai-models');
  expect(info.width).toBe(1080);
  // A blank board drops the credit; the AI deep link brings it back
- await page.getByRole('button',{name:'更多操作'}).click();await page.getByRole('menuitem',{name:'模板中心…'}).click();await page.getByRole('button',{name:/空白/}).click();
+ await page.getByRole('button',{name:'模板中心'}).click();await page.getByRole('button',{name:/空白/}).click();
  expect((await state(page)).credit).toBeUndefined();
  await page.goto('/?tpl=ai-models');await page.getByRole('button',{name:'打开',exact:true}).click();
  await expect.poll(async()=>(await state(page)).credit?.template).toBe('ai-models');
@@ -175,4 +175,13 @@ test('follow button turns into 已关注 once the visitor follows the Toy author
  await page.evaluate(()=>{(window as unknown as {__following:boolean}).__following=true;document.dispatchEvent(new Event('visibilitychange'));});
  await expect(page.locator('.toy-author .follow-btn')).toHaveText('已关注');
  await expect(page.locator('.credit-bar .follow-btn')).toHaveText('已关注');
+});
+test('picking a provider from the expanded list collapses it so the models are visible',async({page})=>{
+ await page.getByRole('tab',{name:/全部模型/}).click();
+ await page.getByRole('button',{name:/^更多厂商/}).click();
+ await page.getByRole('button',{name:'DeepSeek',exact:true}).click();
+ await expect(page.getByRole('button',{name:/^更多厂商/})).toBeVisible(); // collapsed again
+ await expect(page.locator('.catalog-item').first()).toBeInViewport();
+ await expect(page.locator('.catalog-item').first()).toContainText('DeepSeek');
+ await expect(page.locator('.library-foot')).toBeInViewport({ratio:1}); // the data-source line isn't cut off
 });

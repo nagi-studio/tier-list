@@ -33,6 +33,7 @@ h1,h2,p{margin:0}
 .segmented>button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 12px;border-radius:7px;font-size:13px;font-weight:550;color:var(--muted);white-space:nowrap;transition:background .15s,color .15s}
 .segmented>button:hover{color:var(--text)}
 .segmented>button[data-state=on],.segmented>button[data-state=active]{background:var(--raised);color:var(--text);box-shadow:0 1px 2px #0003,0 0 0 1px var(--line)}
+.segmented>button:focus-visible{outline:none;box-shadow:0 0 0 2px var(--accent-soft),0 0 0 1px var(--accent)}
 .segmented>button span{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
 
 /* Toast */

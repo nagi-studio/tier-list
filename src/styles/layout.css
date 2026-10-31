@@ -1,6 +1,6 @@
 /* Shell */
 .app-shell{max-width:1680px;margin:0 auto}
-.site-header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid var(--line)}
+.site-header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid var(--line)}
 .wordmark{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;letter-spacing:.5px}
 .mark{display:inline-flex;align-items:flex-end;gap:2px;height:18px}
 .mark i{display:block;width:5px;border-radius:2px;background:var(--accent)}
@@ -21,3 +21,4 @@
 /* Toy author: avatar, name, follow */
 .toy-author{display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted)}
 .toy-author .avatar{border-radius:50%}
+.header-templates{height:34px}

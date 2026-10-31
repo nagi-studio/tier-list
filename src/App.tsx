@@ -60,7 +60,7 @@ export default function App() {
   const rowIndex = modal?.kind === 'row' ? board.rows.findIndex(r => r.id === modal.row.id) : -1;
 
   return <div className="app-shell">
-    <Header theme={board.theme} saveError={saveError}/>
+    <Header theme={board.theme} saveError={saveError} onOpenTemplates={() => setModal({kind: 'template'})}/>
     <main className="workspace">
       <section className="editor">
         <Toolbar exportQr={board.exportQr !== false} preset={presetOf(board)} canUndo={past.length > 0} canRedo={future.length > 0} exporting={exporting}
