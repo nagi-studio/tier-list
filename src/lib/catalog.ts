@@ -1,10 +1,11 @@
 // AI model catalog (synced from Artificial Analysis by scripts/sync-aa.ts) and helpers to browse it.
 import {z} from 'zod';
+import {modelIdSchema} from './ids';
 import {itemSchema} from './board.ts';
 import rawModels from '../data/models.json';
 import rawSource from '../data/models-source.json';
 
-export const modelSchema = itemSchema.extend({provider: z.string(), date: z.string()});
+export const modelSchema = itemSchema.omit({id: true, catalogId: true}).extend({id: modelIdSchema, provider: z.string(), date: z.string()});
 export type Model = z.infer<typeof modelSchema>;
 export const models = z.array(modelSchema).parse(rawModels);
 export const source = z.object({
@@ -18,7 +19,10 @@ export const flagships = models.filter(m => m.flagship);
 const providerCounts = models.reduce((acc, m) => acc.set(m.provider, (acc.get(m.provider) || 0) + 1), new Map<string, number>());
 export const providers = [...providerCounts].sort((a, b) => b[1] - a[1]).map(([p]) => p);
 /** Lobe icon key → provider display name. */
-export const brandNames = Object.fromEntries(models.filter(m => m.icon).reverse().map(m => [m.icon, m.provider]));
+export const brandNames: ReadonlyMap<string, string> = models.toReversed().reduce((names, model) => {
+  if (model.icon) names.set(model.icon, model.provider);
+  return names;
+}, new Map<string, string>());
 
 const normalize = (s: string) => s.toLowerCase().replace(/[\s\-_.()]/g, '');
 /** Loose match so "gpt6" finds "GPT-6" and "claude opus" finds "Claude Opus 5.5". */

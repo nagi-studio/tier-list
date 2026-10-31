@@ -1,5 +1,6 @@
 import type {ComponentProps} from 'react';
 import type {DialogProps} from './types';
+import type {TemplateId} from '@/lib/ids';
 import type {CommunityEntry} from '@/lib/community';
 import {useState} from 'react';
 import {ExternalLink, Loader2} from 'lucide-react';
@@ -19,7 +20,7 @@ const BUILTIN = [
   {key: 'blank', title: '空白', description: '从零开始，排什么都行', preview: [{name: '✦', emoji: '✦'}]},
 ];
 
-async function loadCommunity(id: string) {
+async function loadCommunity(id: TemplateId) {
   const res = await fetch(`${import.meta.env.BASE_URL}community/${id}.json`);
   if (!res.ok) throw Error();
   const raw: unknown = await res.json();
@@ -46,11 +47,11 @@ function TemplateCard({title, description, count, author, bilibili, preview, bus
 
 /** Template center: built-in starters plus community templates from templates/ in the repo. */
 export default function TemplateDialog({onClose}: DialogProps) {
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState<TemplateId | null>(null);
   function useBuiltin(t: typeof BUILTIN[number]) {
     const board = getEditorState().board;
     const pool = t.key === 'ai' ? flagships.map(fromCatalog) : [];
-    dispatch({type: 'loadTemplate', board: replaceContestants(board, t.key === 'ai' ? '2026 AI 大模型排位' : '我的 Tier List', pool)});
+    dispatch({type: 'loadTemplate', board: replaceContestants({board, title: t.key === 'ai' ? '2026 AI 大模型排位' : '我的 Tier List', pool})});
     onClose();
   }
   async function useCommunity(t: CommunityEntry) {

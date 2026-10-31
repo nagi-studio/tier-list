@@ -4,7 +4,9 @@ import type {Item as BoardItem, Row} from '@/lib/board';
 // Right-click menus for tiles and tiers.
 import {ContextMenu} from 'radix-ui';
 import {Pencil, ArrowRightLeft, Copy, Trash2, ArrowUpToLine, ArrowDownToLine, ChevronUp, ChevronDown, Eraser, ChevronRight, Check} from 'lucide-react';
-import {MAX_ROWS, allItems, containerOf} from '@/lib/board';
+import {MAX_ROWS, containerOf} from '@/lib/board';
+import {POOL} from '@/lib/ids';
+import type {ContainerId} from '@/lib/ids';
 import {deleteItem, deleteRow} from '@/lib/actions';
 import {cx} from '@/lib/utils';
 import {dispatch, useEditor} from '@/store/editor';
@@ -29,15 +31,15 @@ function MenuShell({trigger, label, children}: {trigger: ReactNode; label: strin
   </ContextMenu.Root>;
 }
 
-function MoveToMenu({itemId}: {itemId: string}) {
-  const {board} = useEditor(), here = containerOf(board, itemId);
-  const targets = [...board.rows.map(r => ({id: r.id, label: r.label, color: r.color})), {id: 'pool', label: '待定区', color: undefined}];
+function MoveToMenu({item}: {item: BoardItem}) {
+  const {board} = useEditor(), here = containerOf(board, item.id);
+  const targets: {id: ContainerId; label: string; color?: string}[] = [...board.rows.map(r => ({id: r.id, label: r.label, color: r.color})), {id: POOL, label: '待定区', color: undefined}];
   return <ContextMenu.Sub>
     <ContextMenu.SubTrigger className="menu-item"><ArrowRightLeft size={16}/>移到<ChevronRight size={15} className="menu-chevron"/></ContextMenu.SubTrigger>
     <ContextMenu.Portal>
       <ContextMenu.SubContent className="menu" sideOffset={4} collisionPadding={8}>
         {targets.map(t => <ContextMenu.Item key={t.id} className="menu-item" disabled={t.id === here}
-          onSelect={() => { const item = allItems(board).find(i => i.id === itemId); if (item) dispatch({type: 'updateItem', item, target: t.id}); }}>
+          onSelect={() => dispatch({type: 'updateItem', item, target: t.id})}>
           <span className="menu-swatch" style={{background: t.color || 'var(--muted)'}}/>{t.label}{t.id === here && <Check size={15} className="menu-chevron"/>}
         </ContextMenu.Item>)}
       </ContextMenu.SubContent>
@@ -50,7 +52,7 @@ export function TileMenu({item, onEdit, children}: {item: BoardItem; onEdit: (it
   const trigger = <div className="menu-trigger" onContextMenu={e => e.stopPropagation()}>{children}</div>;
   return <MenuShell trigger={trigger} label={item.name}>
     <Item icon={Pencil} onSelect={() => onEdit(item)}>编辑…</Item>
-    <MoveToMenu itemId={item.id}/>
+    <MoveToMenu item={item}/>
     <Item icon={Copy} onSelect={() => dispatch({type: 'duplicateItem', id: item.id})}>复制一份</Item>
     <Separator/>
     <Item icon={Trash2} danger onSelect={() => deleteItem(item.id)}>删除</Item>

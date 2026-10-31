@@ -1,3 +1,4 @@
+import {newItemId} from '../src/lib/ids';
 import {must} from './helpers';
 import {test} from 'bun:test';
 import assert from 'node:assert/strict';
@@ -34,7 +35,7 @@ test('template → board → template keeps tiers, placements and drops uploaded
   assert.ok(boardSchema.safeParse(board).success);
   assert.equal(must(must(board.rows[0]).items[0]).name, 'Claude');
   assert.equal(must(board.pool[0]).name, '蜜雪冰城');
-  board.pool.push({id: 'img', name: '上传的', image: 'data:image/png;base64,AAAA'});
+  board.pool.push({id: newItemId(), name: '上传的', image: 'data:image/png;base64,AAAA'});
   const {template: back, droppedImages} = boardToTemplate(board);
   assert.equal(droppedImages, 1);
   assert.equal(must(back.items.find(i => i.name === 'Claude')).tier, 0);

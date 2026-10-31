@@ -10,7 +10,8 @@ import {toast} from '@/lib/toast';
 import {getEditorState} from '@/store/editor';
 
 type ShareState =
-  | {status: 'idle' | 'working'}
+  | {status: 'idle'}
+  | {status: 'working'}
   | {status: 'error'; message: string}
   | {status: 'ready'; link: Awaited<ReturnType<typeof createShareLink>>; canShare: boolean; canQr: boolean};
 
@@ -29,7 +30,7 @@ export default function ShareDialog({onClose}: DialogProps) {
       if (!check.ok) { setState({status: 'error', message: check.message}); return; }
       const [canShare, canQr] = await Promise.all([supports('share'), supports('getQrCode')]);
       setState({status: 'ready', link, canShare, canQr});
-    } catch (e) { console.error(e); setState({status: 'error', message: '生成链接失败，请重试'}); }
+    } catch (e) { console.error({event: 'create_share_link_failed', error: e}); setState({status: 'error', message: '生成链接失败，请重试'}); }
   }
   async function copy() {
     if (state.status !== 'ready') return;

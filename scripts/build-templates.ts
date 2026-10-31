@@ -12,7 +12,8 @@ import {readdir, readFile, writeFile, mkdir, rm, stat} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {join, relative, resolve} from 'node:path';
 import sharp from 'sharp';
-import {normalizeTemplate, TEMPLATE_ID_RE} from '../src/lib/template.ts';
+import {normalizeTemplate} from '../src/lib/template.ts';
+import {templateIdSchema} from '../src/lib/ids';
 import {brandKeys} from '../src/components/BrandAvatar.tsx';
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024, IMAGE_SIZE = 128;
@@ -26,9 +27,11 @@ export async function buildTemplates({root = process.cwd(), check = false} = {})
   const written = new Set<string>();
   if (!check) await mkdir(outDir, {recursive: true});
 
-  for (const id of ids) {
-    const where = `templates/${id}`, fail = (msg: string) => errors.push(`${where}: ${msg}`);
-    if (!TEMPLATE_ID_RE.test(id)) { fail('文件夹名只能用小写字母、数字和短横线（2–40 个字符），例如 milk-tea'); continue; }
+  for (const rawId of ids) {
+    const where = `templates/${rawId}`, fail = (msg: string) => errors.push(`${where}: ${msg}`);
+    const parsedId = templateIdSchema.safeParse(rawId);
+    if (!parsedId.success) { fail('文件夹名只能用小写字母、数字和短横线（2–40 个字符），例如 milk-tea'); continue; }
+    const id = parsedId.data;
     let raw: unknown;
     try { raw = JSON.parse(await readFile(join(srcDir, id, 'template.json'), 'utf8')); }
     catch (e) { fail(z.object({code: z.literal('ENOENT')}).safeParse(e).success ? '缺少 template.json' : `template.json 不是合法 JSON：${e instanceof Error ? e.message : String(e)}`); continue; }

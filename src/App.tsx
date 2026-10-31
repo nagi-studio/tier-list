@@ -15,8 +15,10 @@ import TemplateDialog from '@/features/dialogs/TemplateDialog';
 import ConfirmDialog from '@/features/dialogs/ConfirmDialog';
 import ShareDialog from '@/features/dialogs/ShareDialog';
 import {useMediaQuery} from '@/hooks/useMediaQuery';
-import {allItems, containerOf, fromCatalog, presetOf, uid} from '@/lib/board';
+import {allItems, containerOf, fromCatalog, presetOf} from '@/lib/board';
 import {exportJson, exportPng, readBoardFile} from '@/lib/files';
+import {newItemId, POOL} from '@/lib/ids';
+import type {ContainerId} from '@/lib/ids';
 import {toast} from '@/lib/toast';
 import {templateToBoard} from '@/lib/template';
 import {clearIncomingShare, useIncomingShare} from '@/lib/share';
@@ -31,8 +33,8 @@ export default function App() {
   const closeModal = () => setModal(null);
 
   const added = new Set(allItems(board).map(i => i.catalogId));
-  const editItem = (item: Item) => setModal({kind: 'item', item: {...item}, target: containerOf(board, item.id) ?? 'pool', isNew: false});
-  const newItem = (target = 'pool', name = '') => setModal({kind: 'item', item: {id: uid(), name, emoji: '✦'}, target, isNew: true});
+  const editItem = (item: Item) => setModal({kind: 'item', item: {...item}, target: containerOf(board, item.id) ?? POOL, isNew: false});
+  const newItem = (target: ContainerId = POOL, name = '') => setModal({kind: 'item', item: {id: newItemId(), name, emoji: '✦'}, target, isNew: true});
   function addModels(models: Model[]) {
     dispatch({type: 'addItems', items: models.map(fromCatalog)});
     toast(models.length === 1 ? `已加入待定区：${models[0]?.name}` : `已加入 ${models.length} 个旗舰模型`);
@@ -40,7 +42,7 @@ export default function App() {
   async function handleExport() {
     setExporting(true);
     try { if (!canvasRef.current) return; await exportPng(canvasRef.current, board.title); toast('图片已导出'); }
-    catch (e) { console.error(e); toast('导出失败，请重试或先保存 JSON'); }
+    catch (e) { console.error({event: 'export_png_failed', title: board.title, error: e}); toast('导出失败，请重试或先保存 JSON'); }
     finally { setExporting(false); }
   }
   async function handleImport(e: ChangeEvent<HTMLInputElement>) {
@@ -52,7 +54,7 @@ export default function App() {
     else toast('文件格式不对，请选择本工具导出的 JSON');
   }
 
-  const library = <LibraryPanel added={added} onAdd={m => addModels([m])} onAddMany={addModels} onCreate={name => newItem('pool', name)} onClose={isMobile ? () => setLibraryOpen(false) : null}/>;
+  const library = <LibraryPanel added={added} onAdd={m => addModels([m])} onAddMany={addModels} onCreate={name => newItem(POOL, name)} onClose={isMobile ? () => setLibraryOpen(false) : null}/>;
   const rowIndex = modal?.kind === 'row' ? board.rows.findIndex(r => r.id === modal.row.id) : -1;
 
   return <div className="app-shell">

@@ -1,3 +1,4 @@
+import type {ModelId} from '@/lib/ids';
 import type {Model} from '@/lib/catalog';
 import {useState} from 'react';
 import {Tabs} from 'radix-ui';
@@ -10,7 +11,7 @@ import {cx} from '@/lib/utils';
 const PAGE = 60, TOP_PROVIDERS = 9;
 
 /** Browse the model catalog: flagships by default, every model via tab or search. */
-export default function LibraryPanel({added, onAdd, onAddMany, onCreate, onClose}: {added: ReadonlySet<string | undefined>; onAdd: (model: Model) => void; onAddMany: (models: Model[]) => void; onCreate: (name: string) => void; onClose: (() => void) | null}) {
+export default function LibraryPanel({added, onAdd, onAddMany, onCreate, onClose}: {added: ReadonlySet<ModelId | undefined>; onAdd: (model: Model) => void; onAddMany: (models: Model[]) => void; onCreate: (name: string) => void; onClose: (() => void) | null}) {
   const [view, setView] = useState({tab: 'flagship', query: '', provider: ''});
   const [limit, setLimit] = useState(PAGE);
   const [allProviders, setAllProviders] = useState(false);

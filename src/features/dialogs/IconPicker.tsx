@@ -8,7 +8,7 @@ import {QUICK_EMOJIS} from '@/lib/constants';
 import {IMAGE_ACCEPT, imageToDataUrl} from '@/lib/image';
 import {cx} from '@/lib/utils';
 
-const brandKeys = allBrandKeys.filter(k => brandNames[k]);
+const brandKeys = allBrandKeys.filter(k => brandNames.get(k));
 const initialTab = (item: Item) => item.image ? 'image' : item.icon ? 'brand' : 'text';
 
 /** Choose a contestant's icon: emoji/text, an uploaded image, or a brand logo. Calls onChange with icon fields. */
@@ -51,7 +51,7 @@ export default function IconPicker({item, onChange, onBusyChange}: {item: Item; 
       </Tabs.Content>
       <Tabs.Content value="brand" className="icon-panel">
         <div className="brand-grid">
-          {brandKeys.map(k => <button type="button" key={k} title={brandNames[k]} aria-label={brandNames[k]} className={cx('brand-choice', item.icon === k && !item.image && 'on')} onClick={() => setIcon({icon: k, emoji: item.emoji})}><BrandAvatar icon={k} size={32}/></button>)}
+          {brandKeys.map(k => <button type="button" key={k} title={brandNames.get(k)} aria-label={brandNames.get(k)} className={cx('brand-choice', item.icon === k && !item.image && 'on')} onClick={() => setIcon({icon: k, emoji: item.emoji})}><BrandAvatar icon={k} size={32}/></button>)}
         </div>
       </Tabs.Content>
     </Tabs.Root>

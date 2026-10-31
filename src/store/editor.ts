@@ -2,30 +2,39 @@
 // Components subscribe with useSyncExternalStore; persistence happens in dispatch, so no effects are needed.
 import {useSyncExternalStore} from 'react';
 import * as B from '../lib/board.ts';
+import type {ItemId, RowId, ContainerId, DropTarget} from '../lib/ids';
 import type {Board, Item, Row, Preset} from '../lib/board.ts';
 
 const HISTORY = 40;
 
 export type EditorAction =
-  | {type: 'addItems'; items: Item[]; target?: string}
-  | {type: 'updateItem'; item: Item; target?: string}
-  | {type: 'removeItem' | 'duplicateItem' | 'clearRow' | 'deleteRow'; id: string}
+  | {type: 'addItems'; items: Item[]; target?: ContainerId}
+  | {type: 'updateItem'; item: Item; target?: ContainerId}
+  | {type: 'removeItem'; id: ItemId}
+  | {type: 'duplicateItem'; id: ItemId}
+  | {type: 'clearRow'; id: RowId}
+  | {type: 'deleteRow'; id: RowId}
   | {type: 'addRow'; index?: number}
   | {type: 'updateRow'; row: Pick<Row, 'id' | 'label' | 'color'>}
-  | {type: 'moveRow'; id: string; delta: number}
-  | {type: 'moveRowTo'; id: string; overId: string}
+  | {type: 'moveRow'; id: RowId; delta: -1 | 1}
+  | {type: 'moveRowTo'; id: RowId; overId: RowId}
   | {type: 'applyPreset'; preset: Preset}
   | {type: 'replaceContestants'; title: string; pool: Item[]}
   | {type: 'loadTemplate'; board: Pick<Board, 'title' | 'rows' | 'pool'>}
   | {type: 'importBoard'; board: Board}
   | {type: 'setTitle'; title: string}
-  | {type: 'resetPlacements' | 'toggleTheme' | 'undo' | 'redo' | 'dragCancel'}
-  | {type: 'dragStart'; id: string}
-  | {type: 'dragOver' | 'dragEnd'; overId?: string | null};
+  | {type: 'resetPlacements'}
+  | {type: 'toggleTheme'}
+  | {type: 'undo'}
+  | {type: 'redo'}
+  | {type: 'dragCancel'}
+  | {type: 'dragStart'; id: ItemId}
+  | {type: 'dragOver'; target: DropTarget | null}
+  | {type: 'dragEnd'; target: DropTarget | null};
 
 type EditorState = {
   board: Board; past: Board[]; future: Board[];
-  drag: {id: string; snapshot: Board} | null;
+  drag: {id: ItemId; snapshot: Board} | null;
   saveError: boolean;
 };
 type StoreOptions = {
@@ -41,18 +50,18 @@ export const createInitialState = (board: Board): EditorState => ({board, past: 
 export function editorReducer(state: EditorState, action: EditorAction): EditorState {
   const commit = (board: Board): EditorState => board === state.board ? state : {...state, board, past: pushPast(state.past, state.board), future: []};
   switch (action.type) {
-    case 'addItems': return commit(B.addItems(state.board, action.items, action.target));
-    case 'updateItem': return commit(B.updateItem(state.board, action.item, action.target));
+    case 'addItems': return commit(B.addItems({board: state.board, items: action.items, target: action.target}));
+    case 'updateItem': return commit(B.updateItem({board: state.board, item: action.item, target: action.target}));
     case 'removeItem': return commit(B.removeItem(state.board, action.id));
     case 'duplicateItem': return commit(B.duplicateItem(state.board, action.id));
     case 'addRow': return commit(B.addRow(state.board, action.index));
     case 'clearRow': return commit(B.clearRow(state.board, action.id));
     case 'updateRow': return commit(B.updateRow(state.board, action.row));
-    case 'moveRow': return commit(B.moveRow(state.board, action.id, action.delta));
-    case 'moveRowTo': return commit(B.moveRowTo(state.board, action.id, action.overId));
+    case 'moveRow': return commit(B.moveRow({board: state.board, rowId: action.id, delta: action.delta}));
+    case 'moveRowTo': return commit(B.moveRowTo({board: state.board, rowId: action.id, overRowId: action.overId}));
     case 'deleteRow': return commit(B.deleteRow(state.board, action.id));
     case 'applyPreset': return commit(B.applyTierPreset(state.board, action.preset));
-    case 'replaceContestants': return commit(B.replaceContestants(state.board, action.title, action.pool));
+    case 'replaceContestants': return commit(B.replaceContestants({board: state.board, title: action.title, pool: action.pool}));
     case 'loadTemplate': return commit(B.loadTemplate(state.board, action.board));
     case 'resetPlacements': return commit(B.resetPlacements(state.board));
     case 'setTitle': return commit(B.setTitle(state.board, action.title));
@@ -70,19 +79,19 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'dragStart':
       return {...state, drag: {id: action.id, snapshot: state.board}};
     case 'dragOver': {
-      if (!state.drag || action.overId == null) return state;
-      const from = B.containerOf(state.board, state.drag.id), to = B.targetOf(state.board, action.overId);
-      return from && to && from !== to ? {...state, board: B.moveItem(state.board, state.drag.id, to, action.overId)} : state;
+      if (!state.drag || action.target === null) return state;
+      const from = B.containerOf(state.board, state.drag.id), to = B.dropContainer(state.board, action.target);
+      return from && to && from !== to ? {...state, board: B.moveItem({board: state.board, itemId: state.drag.id, target: to, overId: action.target.kind === 'item' ? action.target.id : undefined})} : state;
     }
     case 'dragEnd': {
       if (!state.drag) return state;
       const {id, snapshot} = state.drag;
       let board = state.board;
-      if (action.overId == null) board = snapshot;
-      else if (action.overId === B.TRASH_ID) board = B.removeItem(board, id);
+      if (action.target === null) board = snapshot;
+      else if (action.target.kind === 'trash') board = B.removeItem(board, id);
       else {
-        const to = B.targetOf(board, action.overId);
-        if (to && id !== action.overId) board = B.moveItem(board, id, to, action.overId);
+        const to = B.dropContainer(board, action.target);
+        if (to && (action.target.kind !== 'item' || id !== action.target.id)) board = B.moveItem({board, itemId: id, target: to, overId: action.target.kind === 'item' ? action.target.id : undefined});
       }
       return sameBoard(board, snapshot)
         ? {...state, board: snapshot, drag: null}
@@ -92,8 +101,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return state.drag ? {...state, board: state.drag.snapshot, drag: null} : state;
     default: {
       const _exhaustive: never = action;
-      void _exhaustive;
-      return state;
+      return _exhaustive;
     }
   }
 }

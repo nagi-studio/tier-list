@@ -1,11 +1,12 @@
 // Shared template boundary for authoring JSON, community fetches and share links.
 import {z} from 'zod';
-import {colorAt, TIER_PRESETS, presetSchema, uid} from './board.ts';
+import {colorAt, TIER_PRESETS, presetSchema} from './board.ts';
+import {newItemId, newRowId} from './ids';
+import {mapNonEmpty} from './nonEmpty';
 import type {Board, Item, Row} from './board.ts';
 
 export const LIMITS = {title: 60, description: 200, author: 40, tags: 5, tag: 12, tiers: 30, label: 30, items: 200, name: 60, emoji: 8};
 export const ASSET_RE = /^community\/[a-z0-9-]+\/[a-f0-9]{12}\.webp$/;
-export const TEMPLATE_ID_RE = /^[a-z0-9][a-z0-9-]{1,39}$/;
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 const text = (max: number) => z.string({error: '必须是字符串'}).trim().max(max, {
@@ -19,6 +20,7 @@ const tierSchema = z.object({
   label: requiredText(LIMITS.label),
   color: z.string({error: '必须是 #RRGGBB 格式'}).regex(HEX, {error: '必须是 #RRGGBB 格式'}).nullish(),
 });
+const tierInputSchema = z.union([requiredText(LIMITS.label).transform(label => ({label, color: undefined})), tierSchema]);
 const uidString = z.string().trim().regex(/^\d{1,19}$/, {
   error: '必须是 B 站 UID（空间链接 space.bilibili.com/ 后面那串数字）',
 });
@@ -47,9 +49,10 @@ export function createTemplateSchema({allowImages = false, knownIcons}: Template
     tags: z.array(requiredText(LIMITS.tag)).max(LIMITS.tags).nullish().transform(v => v?.length ? v : undefined).describe('最多 5 个标签，每个最多 12 个字'),
     tiers: z.union([
       presetSchema.describe('classic = S+ S A B C D；cn = 夯 顶级 人上人 NPC 拉完了；numeric = T0–T4')
-        .transform(key => TIER_PRESETS[key].map((label, i) => ({label, color: colorAt(i)}))),
-      z.array(z.union([requiredText(LIMITS.label).transform(label => ({label, color: undefined})), tierSchema]))
-        .min(1).max(LIMITS.tiers).transform(tiers => tiers.map((tier, i) => ({label: tier.label, color: tier.color?.toLowerCase() ?? colorAt(i)}))),
+        .transform(key => mapNonEmpty(TIER_PRESETS[key], (label, i) => ({label, color: colorAt(i)}))),
+      z.tuple([tierInputSchema], tierInputSchema)
+        .refine(tiers => tiers.length <= LIMITS.tiers).meta({minItems: 1, maxItems: LIMITS.tiers})
+        .transform(tiers => mapNonEmpty(tiers, (tier, i) => ({label: tier.label, color: tier.color?.toLowerCase() ?? colorAt(i)}))),
     ]).describe('等级：预设名，或自定义等级列表'),
     items: z.array(templateItemSchema).min(1).max(LIMITS.items).superRefine((items, ctx) => {
       const names = new Set<string>();
@@ -121,9 +124,12 @@ export function normalizeTemplate(raw: unknown, options: TemplateOptions = {}): 
 }
 
 export function templateToBoard(tpl: Template): Pick<Board, 'title' | 'rows' | 'pool'> {
-  const rows: Row[] = tpl.tiers.map(t => ({id: uid(), label: t.label, color: t.color, items: []}));
-  const pool: Item[] = [];
-  for (const {tier, ...item} of tpl.items) (tier != null ? rows[tier]?.items ?? pool : pool).push({...item, id: uid()});
+  const toItem = ({tier: _tier, ...item}: TemplateItem): Item => ({...item, id: newItemId()});
+  const rows = mapNonEmpty(tpl.tiers, (tier, index): Row => ({
+    id: newRowId(), label: tier.label, color: tier.color,
+    items: tpl.items.filter(item => item.tier === index).map(toItem),
+  }));
+  const pool = tpl.items.filter(item => item.tier == null).map(toItem);
   return {title: tpl.title, rows, pool};
 }
 
@@ -134,7 +140,7 @@ export function boardToTemplate(board: Board, {withPlacement = true} = {}): {tem
     return {name: it.name, ...(it.emoji && {emoji: it.emoji}), ...(it.icon && {icon: it.icon}), ...(it.asset && {asset: it.asset}), ...(withPlacement && tier != null && {tier})};
   };
   const items = [...board.rows.flatMap((r, i) => r.items.map(it => toItem(it, i))), ...board.pool.map(it => toItem(it))];
-  return {template: {title: board.title.trim() || '我的 Tier List', tiers: board.rows.map(r => ({label: r.label, color: r.color})), items}, droppedImages};
+  return {template: {title: board.title.trim() || '我的 Tier List', tiers: mapNonEmpty(board.rows, r => ({label: r.label, color: r.color})), items}, droppedImages};
 }
 
 // Compact JSON → deflate → base64url, with z (deflate-raw) or j (plain UTF-8) marker.

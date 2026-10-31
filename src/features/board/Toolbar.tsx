@@ -1,7 +1,6 @@
 import type {ComponentProps} from 'react';
 import type {LucideIcon} from 'lucide-react';
 import type {EditorModal} from '@/features/dialogs/types';
-import {presetSchema} from '@/lib/board';
 import {DropdownMenu, ToggleGroup} from 'radix-ui';
 import {Undo2, Redo2, MoreHorizontal, LayoutGrid, RotateCcw, FileJson, Upload, Library, Download, Share2} from 'lucide-react';
 import {Button} from '@/components/ui/button';
@@ -14,7 +13,7 @@ function MenuItem({icon: Icon, children, ...props}: ComponentProps<typeof Dropdo
 
 export default function Toolbar({preset, canUndo, canRedo, exporting, onExport, onSaveJson, onImportJson, onOpenLibrary, onOpenModal}: {preset: string; canUndo: boolean; canRedo: boolean; exporting: boolean; onExport: () => void; onSaveJson: () => void; onImportJson: () => void; onOpenLibrary: () => void; onOpenModal: (modal: EditorModal) => void}) {
   return <div className="toolbar">
-    <ToggleGroup.Root type="single" className="segmented" aria-label="等级模板" value={preset} onValueChange={v => { if (v) dispatch({type: 'applyPreset', preset: presetSchema.parse(v)}); }}>
+    <ToggleGroup.Root type="single" className="segmented" aria-label="等级模板" value={preset} onValueChange={v => { const option = PRESET_OPTIONS.find(option => option.key === v); if (option) dispatch({type: 'applyPreset', preset: option.key}); }}>
       {PRESET_OPTIONS.map(p => <ToggleGroup.Item key={p.key} value={p.key} aria-label={p.name}>{p.label}</ToggleGroup.Item>)}
     </ToggleGroup.Root>
     <div className="toolbar-actions">

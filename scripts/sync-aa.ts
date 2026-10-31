@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {modelIdSchema} from '../src/lib/ids';
 import type {Model} from '../src/lib/catalog.ts';
 // Sync the AI model catalog from Artificial Analysis public pages.
 // Usage: bun scripts/sync-aa.ts   → writes src/data/models.json + src/data/models-source.json
@@ -33,7 +34,7 @@ function extractArray(text: string, key: string): unknown {
 }
 
 const releases = z.array(z.object({
-  slug: z.string(), name: z.string(), creator: z.object({name: z.string(), slug: z.string()}),
+  slug: modelIdSchema, name: z.string(), creator: z.object({name: z.string(), slug: z.string()}),
   intelligenceIndex: z.number().nullish(), releaseDate: z.string(), isOpenWeights: z.boolean().nullish(), isDeprecated: z.boolean().nullish(),
 })).parse(extractArray(await flight('/models/releases'), 'releases'));
 const variants = z.array(z.object({modelCreatorName: z.string(), modelCreatorColor: z.string().nullish()})).parse(extractArray(await flight('/leaderboards/models'), 'initialModels'));

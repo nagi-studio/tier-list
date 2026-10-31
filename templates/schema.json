@@ -86,9 +86,42 @@
           "description": "classic = S+ S A B C D；cn = 夯 顶级 人上人 NPC 拉完了；numeric = T0–T4"
         },
         {
-          "minItems": 1,
-          "maxItems": 30,
           "type": "array",
+          "prefixItems": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "maxLength": 30,
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "color": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label"
+                  ]
+                }
+              ]
+            }
+          ],
           "items": {
             "anyOf": [
               {
@@ -121,7 +154,9 @@
                 ]
               }
             ]
-          }
+          },
+          "minItems": 1,
+          "maxItems": 30
         }
       ],
       "description": "等级：预设名，或自定义等级列表"

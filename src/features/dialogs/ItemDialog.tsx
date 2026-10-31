@@ -9,11 +9,12 @@ import Modal from '@/components/Modal';
 import Logo from '@/components/Logo';
 import IconPicker from './IconPicker';
 import TargetPicker from './TargetPicker';
+import {POOL} from '@/lib/ids';
 import {dispatch} from '@/store/editor';
 import {deleteItem} from '@/lib/actions';
 
 /** Create or edit a contestant. `isNew` items are added on save; existing ones are updated (and moved if needed). */
-export default function ItemDialog({item: initial, target: initialTarget = 'pool', isNew, rows, onClose}: Extract<EditorModal, {kind: 'item'}> & DialogProps & {rows: Row[]}) {
+export default function ItemDialog({item: initial, target: initialTarget = POOL, isNew, rows, onClose}: Extract<EditorModal, {kind: 'item'}> & DialogProps & {rows: Row[]}) {
   const [item, setItem] = useState(initial), [target, setTarget] = useState(initialTarget), [busy, setBusy] = useState(false);
   const name = item.name.trim();
   function save(e: FormEvent<HTMLFormElement>) {

@@ -3,7 +3,7 @@ import {z} from 'zod';
 
 type Ability = 'checkInputSafety' | 'share' | 'getQrCode';
 export interface ToySdk {
-  isSupport(ability: Ability): Promise<boolean>;
+  isSupport(ability: Ability): Promise<unknown>;
   checkInputSafety(input: {text: string; scene: string}): Promise<unknown>;
   share(input: {path: string}): Promise<unknown>;
   getQrCode(input: {path: string; size: number}): Promise<unknown>;
@@ -11,11 +11,15 @@ export interface ToySdk {
 }
 declare global { interface Window { toy?: ToySdk } }
 const sdk = () => window.toy;
+const supportResponseSchema = z.boolean();
 const safetySchema = z.object({passed: z.boolean(), status: z.string()});
 const qrSchema = z.object({base64: z.string()});
 
 export async function supports(ability: Ability): Promise<boolean> {
-  try { return !!await sdk()?.isSupport(ability); } catch { return false; }
+  try {
+    const toy = sdk();
+    return toy ? supportResponseSchema.parse(await toy.isSupport(ability)) : false;
+  } catch { return false; }
 }
 export async function checkText(text: string, scene: string): Promise<{ok: true} | {ok: false; message: string}> {
   if (!await supports('checkInputSafety')) return {ok: true};
