@@ -1,5 +1,5 @@
 import {DropdownMenu, ToggleGroup} from 'radix-ui';
-import {Undo2, Redo2, MoreHorizontal, LayoutGrid, RotateCcw, FileJson, Upload, Library, Download} from 'lucide-react';
+import {Undo2, Redo2, MoreHorizontal, LayoutGrid, RotateCcw, FileJson, Upload, Library, Download, Share2} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {PRESET_OPTIONS} from '@/lib/constants';
 import {dispatch} from '@/store/editor';
@@ -20,7 +20,7 @@ export default function Toolbar({preset, canUndo, canRedo, exporting, onExport, 
         <DropdownMenu.Trigger asChild><button type="button" className="icon-btn" aria-label="更多操作" title="更多"><MoreHorizontal size={18}/></button></DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content className="menu" align="end" sideOffset={6}>
-            <MenuItem icon={LayoutGrid} onSelect={() => onOpenModal({kind: 'template'})}>换个题材…</MenuItem>
+            <MenuItem icon={LayoutGrid} onSelect={() => onOpenModal({kind: 'template'})}>模板中心…</MenuItem>
             <MenuItem icon={RotateCcw} onSelect={() => onOpenModal({kind: 'reset'})}>全部移回待定区…</MenuItem>
             <DropdownMenu.Separator className="menu-sep"/>
             <MenuItem icon={FileJson} onSelect={onSaveJson}>保存 JSON</MenuItem>
@@ -28,7 +28,8 @@ export default function Toolbar({preset, canUndo, canRedo, exporting, onExport, 
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
-      <button type="button" className="btn subtle mobile-library" aria-label="打开选手库" onClick={onOpenLibrary}><Library size={16}/>选手库</button>
+      <button type="button" className="btn subtle mobile-library" aria-label="打开选手库" onClick={onOpenLibrary}><Library size={16}/><span className="btn-label">选手库</span></button>
+      <Button className="btn subtle" aria-label="分享" onClick={() => onOpenModal({kind: 'share'})}><Share2 size={16}/><span className="btn-label">分享</span></Button>
       <Button className="btn primary" onClick={onExport} disabled={exporting}><Download size={16}/>{exporting ? '导出中…' : '导出图片'}</Button>
     </div>
   </div>;

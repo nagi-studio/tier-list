@@ -1,6 +1,8 @@
 import {test,expect} from '@playwright/test';
 const state=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tier-studio-v1')));
-test.beforeEach(async({page})=>{await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();});
+// Keep tests deterministic: no real Toy SDK (it needs a Bilibili login). Tests that need one stub it.
+const noSdk=ctx=>ctx.route('**/toy-sdk.js',r=>r.abort());
+test.beforeEach(async({page})=>{await noSdk(page.context());await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();});
 test('desktop: drag across tiers, edit, undo, templates, persistence and exports',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await expect(page.getByRole('textbox',{name:'榜单标题'})).toBeVisible();
@@ -18,7 +20,7 @@ test('desktop: drag across tiers, edit, undo, templates, persistence and exports
  await page.screenshot({path:'/tmp/tier-studio-desktop.png',fullPage:true});expect(errors).toEqual([]);
 });
 test('mobile: no horizontal overflow, catalog search, edit and real touch drag',async({browser})=>{
- const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});const page=await context.newPage();await page.goto('/');
+ const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});await noSdk(context);const page=await context.newPage();await page.goto('/');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.getByRole('button',{name:'打开选手库'}).tap();await page.getByRole('textbox',{name:'搜索模型或厂商'}).fill('deepseek');await expect(page.locator('.catalog-item').first()).toBeVisible();await page.getByRole('button',{name:'关闭选手库'}).tap();
  const s=await state(page),item=s.pool[0];await page.locator(`[data-item-id="${item.id}"] .tile-main`).tap();await page.getByRole('radiogroup',{name:'放到哪里'}).getByRole('radio',{name:s.rows[3].label,exact:true}).tap();await page.getByRole('button',{name:'保存',exact:true}).tap();
@@ -68,4 +70,28 @@ test('right-click menus and the trash',async({page})=>{
  // Drag a whole tier into the trash
  await dragTo(page.getByRole('button',{name:'编辑等级 D',exact:true}),()=>page.locator('.trash'));
  await expect.poll(async()=>(await state(page)).rows.map(r=>r.label).join(',')).toBe('S+,S,B,C');
+});
+test('community template with logos, then share link round-trip',async({page,browser})=>{
+ await page.getByRole('button',{name:'更多操作'}).click();await page.getByRole('menuitem',{name:'模板中心…'}).click();
+ await page.getByRole('button',{name:/编程语言排位/}).click();
+ await expect.poll(async()=>(await state(page)).title).toBe('编程语言排位');
+ const s=await state(page);expect(s.pool.length).toBe(16);expect(s.pool[0].asset).toMatch(/^community\/programming-languages\/[a-f0-9]{12}\.webp$/);
+ await expect.poll(()=>page.locator('.pool .tile img').first().evaluate(img=>img.complete&&img.naturalWidth)).toBe(128);
+ await page.getByRole('button',{name:'编辑 Rust',exact:true}).click();await page.getByRole('radiogroup',{name:'放到哪里'}).getByRole('radio',{name:'S+',exact:true}).click();await page.getByRole('button',{name:'保存',exact:true}).click();
+ await page.getByRole('button',{name:'分享',exact:true}).click();await page.getByRole('button',{name:'生成分享链接'}).click();
+ const url=await page.getByRole('textbox',{name:'分享链接'}).inputValue();expect(url).toMatch(/index\.html\?t=z/);
+ const other=await page.context().newPage();await other.goto(url);await other.getByRole('button',{name:'打开',exact:true}).click();
+ await expect.poll(async()=>(await other.evaluate(()=>JSON.parse(localStorage.getItem('tier-studio-v1')))).rows[0].items[0]?.name).toBe('Rust');
+ expect(new URL(other.url()).searchParams.has('t')).toBe(false);
+ await expect(other.locator('.tier-board .tile img').first()).toBeVisible();await other.close();
+});
+test('sharing is blocked when the platform content check rejects the text',async({page})=>{
+ const fake=`window.toy={isSupport:async a=>a==='checkInputSafety',checkInputSafety:async({text})=>text.includes('违规')?{passed:false,status:'rejected'}:{passed:true,status:'ok'}};`;
+ await page.context().unroute('**/toy-sdk.js');await page.context().route('**/toy-sdk.js',r=>r.fulfill({contentType:'text/javascript',body:fake}));await page.reload();
+ await page.getByRole('textbox',{name:'榜单标题'}).fill('违规标题');
+ await page.getByRole('button',{name:'分享',exact:true}).click();await page.getByRole('button',{name:'生成分享链接'}).click();
+ await expect(page.getByText('不能公开的内容')).toBeVisible();await expect(page.getByRole('textbox',{name:'分享链接'})).toHaveCount(0);
+ await page.getByRole('button',{name:'关闭'}).click();await page.getByRole('textbox',{name:'榜单标题'}).fill('正常标题');
+ await page.getByRole('button',{name:'分享',exact:true}).click();await page.getByRole('button',{name:'生成分享链接'}).click();
+ await expect(page.getByRole('textbox',{name:'分享链接'})).toBeVisible();
 });

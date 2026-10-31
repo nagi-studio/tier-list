@@ -106,12 +106,14 @@ export function applyTierPreset(s, key) {
 
 export const resetPlacements = s => ({...s, pool: allItems(s), rows: s.rows.map(r => ({...r, items: []}))});
 export const replaceContestants = (s, title, pool) => ({...s, title, pool, rows: s.rows.map(r => ({...r, items: []}))});
+/** Replace title, tiers and contestants with a template's (see lib/template.js templateToBoard). */
+export const loadTemplate = (s, {title, rows, pool}) => ({...s, title, rows, pool});
 export const setTitle = (s, title) => ({...s, title});
 export const toggleTheme = s => ({...s, theme: s.theme === 'light' ? 'dark' : 'light'});
 
 export function validateBoard(v) {
   if (!v || v.version !== 1 || typeof v.title !== 'string' || v.title.length > 160 || typeof v.subtitle !== 'string' || v.subtitle.length > 500 || !Array.isArray(v.rows) || v.rows.length < 1 || v.rows.length > MAX_ROWS || !Array.isArray(v.pool)) return false;
   const ids = new Set(), unique = id => typeof id === 'string' && id.length > 0 && id !== 'pool' && id !== TRASH_ID && !ids.has(id) && !!ids.add(id);
-  const item = x => x && unique(x.id) && typeof x.name === 'string' && x.name.length <= 160 && (!x.icon || /^[a-z0-9-]+$/.test(x.icon)) && (!x.image || /^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(x.image));
+  const item = x => x && unique(x.id) && typeof x.name === 'string' && x.name.length <= 160 && (!x.icon || /^[a-z0-9-]+$/.test(x.icon)) && (!x.image || /^data:image\/(png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/.test(x.image)) && (!x.asset || /^community\/[a-z0-9-]+\/[a-f0-9]{12}\.webp$/.test(x.asset));
   return v.rows.every(r => r && unique(r.id) && typeof r.label === 'string' && r.label.length <= 30 && /^#[\da-f]{6}$/i.test(r.color) && Array.isArray(r.items) && r.items.every(item)) && v.pool.every(item) && allItems(v).length <= 1000;
 }

@@ -3,6 +3,7 @@ import App from './App';
 import {initialState} from './lib/board';
 import {models} from './lib/catalog';
 import {initEditorStore, dispatch, STORAGE_KEY} from './store/editor';
+import {readIncomingShare} from './lib/share';
 import './styles/index.css';
 
 initEditorStore({
@@ -21,4 +22,5 @@ addEventListener('keydown', e => {
   dispatch({type: e.shiftKey ? 'redo' : 'undo'});
 });
 
+readIncomingShare();
 createRoot(document.getElementById('root')).render(<App/>);

@@ -19,6 +19,7 @@ const edits = {
   deleteRow: (s, a) => B.deleteRow(s, a.id),
   applyPreset: (s, a) => B.applyTierPreset(s, a.preset),
   replaceContestants: (s, a) => B.replaceContestants(s, a.title, a.pool),
+  loadTemplate: (s, a) => B.loadTemplate(s, a.board),
   resetPlacements: s => B.resetPlacements(s),
   setTitle: (s, a) => B.setTitle(s, a.title),
   toggleTheme: s => B.toggleTheme(s),

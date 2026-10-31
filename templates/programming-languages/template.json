@@ -1,0 +1,76 @@
+{
+  "$schema": "../schema.json",
+  "title": "编程语言排位",
+  "description": "官方 Logo 版，评论区见",
+  "author": "Nagi-ovo",
+  "tags": [
+    "编程"
+  ],
+  "tiers": "classic",
+  "items": [
+    {
+      "name": "Python",
+      "image": "images/python.svg"
+    },
+    {
+      "name": "JavaScript",
+      "image": "images/javascript.svg"
+    },
+    {
+      "name": "TypeScript",
+      "image": "images/typescript.svg"
+    },
+    {
+      "name": "Rust",
+      "image": "images/rust.svg"
+    },
+    {
+      "name": "Go",
+      "image": "images/go.svg"
+    },
+    {
+      "name": "Java",
+      "image": "images/java.svg"
+    },
+    {
+      "name": "C++",
+      "image": "images/cplusplus.svg"
+    },
+    {
+      "name": "C",
+      "image": "images/c.svg"
+    },
+    {
+      "name": "C#",
+      "image": "images/csharp.svg"
+    },
+    {
+      "name": "Kotlin",
+      "image": "images/kotlin.svg"
+    },
+    {
+      "name": "Swift",
+      "image": "images/swift.svg"
+    },
+    {
+      "name": "PHP",
+      "image": "images/php.svg"
+    },
+    {
+      "name": "Ruby",
+      "image": "images/ruby.svg"
+    },
+    {
+      "name": "Lua",
+      "image": "images/lua.svg"
+    },
+    {
+      "name": "Haskell",
+      "image": "images/haskell.svg"
+    },
+    {
+      "name": "Zig",
+      "image": "images/zig.svg"
+    }
+  ]
+}

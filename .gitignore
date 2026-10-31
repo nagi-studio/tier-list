@@ -3,3 +3,7 @@ dist/
 test-results/
 playwright-report/
 *.zip
+
+public/community/
+src/data/community.json
+artifacts/

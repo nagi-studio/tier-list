@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "万物皆可排 · 社区模板",
+  "type": "object",
+  "required": ["title", "tiers", "items"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "title": {"type": "string", "maxLength": 60, "description": "模板标题，导入后就是榜单标题"},
+    "description": {"type": "string", "maxLength": 200, "description": "一句话介绍，显示在模板中心"},
+    "author": {"type": "string", "maxLength": 40, "description": "你的 GitHub 用户名"},
+    "tags": {"type": "array", "maxItems": 5, "items": {"type": "string", "maxLength": 12}},
+    "tiers": {
+      "description": "等级：预设名，或自定义等级列表",
+      "oneOf": [
+        {"enum": ["classic", "cn", "numeric"], "description": "classic = S+ S A B C D；cn = 夯 顶级 人上人 NPC 拉完了；numeric = T0–T4"},
+        {"type": "array", "minItems": 1, "maxItems": 30, "items": {"oneOf": [
+          {"type": "string", "maxLength": 30},
+          {"type": "object", "required": ["label"], "properties": {
+            "label": {"type": "string", "maxLength": 30},
+            "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
+          }, "additionalProperties": false}
+        ]}}
+      ]
+    },
+    "items": {
+      "type": "array", "minItems": 1, "maxItems": 200,
+      "items": {
+        "type": "object", "required": ["name"], "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "maxLength": 60},
+          "emoji": {"type": "string", "maxLength": 8, "description": "Emoji 或 1–3 个字"},
+          "icon": {"type": "string", "description": "内置品牌 Logo，如 openai、anthropic、google"},
+          "image": {"type": "string", "pattern": "^images/[^/]+\\.(png|jpe?g|webp|gif|svg)$", "description": "模板目录里 images/ 下的图片"},
+          "tier": {"type": "integer", "minimum": 0, "description": "可选：预先放进第几级（从 0 开始）"}
+        }
+      }
+    }
+  }
+}

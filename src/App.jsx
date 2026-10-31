@@ -9,16 +9,20 @@ import ItemDialog from '@/features/dialogs/ItemDialog';
 import RowDialog from '@/features/dialogs/RowDialog';
 import TemplateDialog from '@/features/dialogs/TemplateDialog';
 import ConfirmDialog from '@/features/dialogs/ConfirmDialog';
+import ShareDialog from '@/features/dialogs/ShareDialog';
 import {useMediaQuery} from '@/hooks/useMediaQuery';
 import {allItems, containerOf, fromCatalog, presetOf, uid} from '@/lib/board';
 import {exportJson, exportPng, readBoardFile} from '@/lib/files';
 import {toast} from '@/lib/toast';
+import {templateToBoard} from '@/lib/template';
+import {clearIncomingShare, useIncomingShare} from '@/lib/share';
 import {dispatch, useEditor} from '@/store/editor';
 
 export default function App() {
   const {board, past, future, drag, saveError} = useEditor();
   const [modal, setModal] = useState(null), [libraryOpen, setLibraryOpen] = useState(false), [exporting, setExporting] = useState(false);
   const isMobile = useMediaQuery('(max-width: 900px)');
+  const incoming = useIncomingShare();
   const canvasRef = useRef(null), importRef = useRef(null);
   const closeModal = () => setModal(null);
 
@@ -65,6 +69,9 @@ export default function App() {
     {modal?.kind === 'item' && <ItemDialog {...modal} rows={board.rows} onClose={closeModal}/>}
     {modal?.kind === 'row' && rowIndex >= 0 && <RowDialog row={modal.row} index={rowIndex} total={board.rows.length} onClose={closeModal}/>}
     {modal?.kind === 'template' && <TemplateDialog onClose={closeModal}/>}
+    {modal?.kind === 'share' && <ShareDialog onClose={closeModal}/>}
+    {incoming?.template && <ConfirmDialog title="打开别人分享的榜单？" description={`「${incoming.template.title}」· ${incoming.template.items.length} 个选手。会替换你当前的画布，可以撤销。`} confirmLabel="打开" onConfirm={() => { dispatch({type: 'loadTemplate', board: templateToBoard(incoming.template)}); toast('已打开分享的榜单'); }} onClose={clearIncomingShare}/>}
+    {incoming?.error && <ConfirmDialog title="链接打不开" description={incoming.error} confirmLabel="知道了" onConfirm={() => {}} onClose={clearIncomingShare}/>}
     {modal?.kind === 'reset' && <ConfirmDialog title="全部移回待定区？" description="所有选手回到待定区，标题和等级保留。可以撤销。" confirmLabel="移回待定区" onConfirm={() => dispatch({type: 'resetPlacements'})} onClose={closeModal}/>}
     {modal?.kind === 'import' && <ConfirmDialog title="导入这份榜单？" description={`「${modal.board.title}」· ${allItems(modal.board).length} 个选手。会替换当前画布，可以撤销。`} confirmLabel="导入榜单" onConfirm={() => { dispatch({type: 'importBoard', board: modal.board}); toast('榜单已导入'); }} onClose={closeModal}/>}
     <Toast/>
