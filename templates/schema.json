@@ -1,48 +1,83 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "万物皆可排 · 社区模板",
   "type": "object",
-  "required": [
-    "title",
-    "tiers",
-    "items"
-  ],
   "properties": {
     "$schema": {
       "type": "string"
     },
     "title": {
-      "type": "string",
       "maxLength": 60,
-      "description": "模板标题，导入后就是榜单标题"
+      "description": "模板标题，导入后就是榜单标题",
+      "type": "string",
+      "minLength": 1
     },
     "description": {
-      "type": "string",
-      "maxLength": 200,
-      "description": "一句话介绍，显示在模板中心"
+      "description": "一句话介绍，显示在模板中心",
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 200
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "author": {
-      "type": "string",
-      "maxLength": 40,
-      "description": "署名，显示在模板中心（建议用 B 站昵称）"
+      "description": "署名，显示在模板中心（建议用 B 站昵称）",
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 40
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "bilibili": {
-      "type": "string",
-      "pattern": "^[0-9]{1,19}$",
-      "description": "你的 B 站 UID：space.bilibili.com/ 后面那串数字。模板中心点署名会跳到你的空间"
+      "description": "你的 B 站 UID：space.bilibili.com/ 后面那串数字。模板中心点署名会跳到你的空间",
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d{1,19}$"
+            },
+            {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 10000000000000000000,
+              "multipleOf": 1
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "tags": {
-      "type": "array",
-      "maxItems": 5,
-      "items": {
-        "type": "string",
-        "maxLength": 12
-      }
+      "description": "最多 5 个标签，每个最多 12 个字",
+      "anyOf": [
+        {
+          "maxItems": 5,
+          "type": "array",
+          "items": {
+            "maxLength": 12,
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "tiers": {
-      "description": "等级：预设名，或自定义等级列表",
-      "oneOf": [
+      "anyOf": [
         {
+          "type": "string",
           "enum": [
             "classic",
             "cn",
@@ -52,72 +87,165 @@
         },
         {
           "type": "array",
-          "minItems": 1,
-          "maxItems": 30,
+          "prefixItems": [
+            {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "maxLength": 30,
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "color": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^#[0-9a-fA-F]{6}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label"
+                  ]
+                }
+              ]
+            }
+          ],
           "items": {
-            "oneOf": [
+            "anyOf": [
               {
+                "maxLength": 30,
                 "type": "string",
-                "maxLength": 30
+                "minLength": 1
               },
               {
                 "type": "object",
-                "required": [
-                  "label"
-                ],
                 "properties": {
                   "label": {
+                    "maxLength": 30,
                     "type": "string",
-                    "maxLength": 30
+                    "minLength": 1
                   },
                   "color": {
-                    "type": "string",
-                    "pattern": "^#[0-9a-fA-F]{6}$"
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^#[0-9a-fA-F]{6}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
-                "additionalProperties": false
+                "required": [
+                  "label"
+                ]
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 30
+        }
+      ],
+      "description": "等级：预设名，或自定义等级列表"
+    },
+    "items": {
+      "minItems": 1,
+      "maxItems": 200,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 60,
+            "description": "选手名称",
+            "type": "string",
+            "minLength": 1
+          },
+          "emoji": {
+            "description": "Emoji 或 1–3 个字",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "icon": {
+            "description": "内置品牌 Logo，如 openai、anthropic、google",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "image": {
+            "description": "模板目录里 images/ 下的图片",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[iI][mM][aA][gG][eE][sS]\\/[^/\\\\]+\\.([pP][nN][gG]|[jJ][pP][eE]?[gG]|[wW][eE][bB][pP]|[gG][iI][fF]|[sS][vV][gG])$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "asset": {
+            "description": "编译后的社区图片路径",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^community\\/[a-z0-9-]+\\/[a-f0-9]{12}\\.webp$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tier": {
+            "description": "可选：预先放进第几级（从 0 开始）",
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
               }
             ]
           }
-        }
-      ]
-    },
-    "items": {
-      "type": "array",
-      "minItems": 1,
-      "maxItems": 200,
-      "items": {
-        "type": "object",
+        },
         "required": [
           "name"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 60
-          },
-          "emoji": {
-            "type": "string",
-            "maxLength": 8,
-            "description": "Emoji 或 1–3 个字"
-          },
-          "icon": {
-            "type": "string",
-            "description": "内置品牌 Logo，如 openai、anthropic、google"
-          },
-          "image": {
-            "type": "string",
-            "pattern": "^images/[^/]+\\.(png|jpe?g|webp|gif|svg)$",
-            "description": "模板目录里 images/ 下的图片"
-          },
-          "tier": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "可选：预先放进第几级（从 0 开始）"
-          }
-        }
+        ]
       }
     }
-  }
+  },
+  "required": [
+    "title",
+    "tiers",
+    "items"
+  ],
+  "title": "万物皆可排 · 社区模板"
 }
