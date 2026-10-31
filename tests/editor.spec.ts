@@ -7,6 +7,16 @@ import {test,expect} from '@playwright/test';
 const state=async(page: Page)=>boardSchema.parse(await page.evaluate((): unknown=>JSON.parse(localStorage.getItem('tier-studio-v1') ?? 'null')));
 // Keep tests deterministic: no real Toy SDK (it needs a Bilibili login). Tests that need one stub it.
 const noSdk=(ctx: BrowserContext)=>ctx.route('**/toy-sdk.js',r=>r.abort());
+/** Replace the SDK with a fake whose content check rejects any text containing 违规. */
+const fakeSdk=async(page: Page)=>{
+ const body=`window.toy={isSupport:async a=>a==='checkInputSafety',checkInputSafety:async({text})=>text.includes('违规')?{passed:false,status:'rejected'}:{passed:true,status:'ok'}};`;
+ await page.context().unroute('**/toy-sdk.js');await page.context().route('**/toy-sdk.js',r=>r.fulfill({contentType:'text/javascript',body}));await page.reload();
+};
+const exportAndDecode=async(page: Page,file: string)=>{
+ const dl=page.waitForEvent('download');await page.getByRole('button',{name:'导出图片'}).click();await (await dl).saveAs(file);
+ const {data,info}=await sharp(file).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+ return jsQR(new Uint8ClampedArray(data),info.width,info.height)?.data;
+};
 test.beforeEach(async({page})=>{await noSdk(page.context());await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();});
 test('desktop: drag across tiers, edit, undo, templates, persistence and exports',async({page})=>{
  const errors: string[]=[];page.on('pageerror',e=>errors.push(e.message));
@@ -91,16 +101,19 @@ test('community template with logos, then share link round-trip',async({page,bro
  await expect(other.locator('.tier-board .tile img').first()).toBeVisible();await other.close();
 });
 test('sharing is blocked when the platform content check rejects the text',async({page})=>{
- const fake=`window.toy={isSupport:async a=>a==='checkInputSafety',checkInputSafety:async({text})=>text.includes('违规')?{passed:false,status:'rejected'}:{passed:true,status:'ok'}};`;
- await page.context().unroute('**/toy-sdk.js');await page.context().route('**/toy-sdk.js',r=>r.fulfill({contentType:'text/javascript',body:fake}));await page.reload();
- await page.getByRole('textbox',{name:'榜单标题'}).fill('违规标题');
+ // Bad text that didn't come through the editor's inputs (an imported or older saved board)
+ await page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('tier-studio-v1')??'{}');s.title='违规标题';localStorage.setItem('tier-studio-v1',JSON.stringify(s));});
+ await fakeSdk(page);
  await page.getByRole('button',{name:'分享',exact:true}).click();await page.getByRole('button',{name:'生成分享链接'}).click();
  await expect(page.getByText('不能公开的内容')).toBeVisible();await expect(page.getByRole('textbox',{name:'分享链接'})).toHaveCount(0);
- await page.getByRole('button',{name:'关闭'}).click();await page.getByRole('textbox',{name:'榜单标题'}).fill('正常标题');
+ await page.getByRole('button',{name:'关闭'}).click();
+ const title=page.getByRole('textbox',{name:'榜单标题'});await title.fill('正常标题');await title.press('Enter');
+ await expect.poll(async()=>(await state(page)).title).toBe('正常标题');
  await page.getByRole('button',{name:'分享',exact:true}).click();await page.getByRole('button',{name:'生成分享链接'}).click();
  await expect(page.getByRole('textbox',{name:'分享链接'})).toBeVisible();
 });
 test('template credit, follow link, export QR code and ?tpl= deep link',async({page})=>{
+ await fakeSdk(page);
  const decodeQr=async(file:string)=>{const {data,info}=await sharp(file).ensureAlpha().raw().toBuffer({resolveWithObject:true});return jsQR(new Uint8ClampedArray(data),info.width,info.height)?.data;};
  await page.getByRole('button',{name:'模板中心'}).click();
  await expect(page.locator('.template-author').first()).toContainText('卡普迪姆');
@@ -121,6 +134,7 @@ test('template credit, follow link, export QR code and ?tpl= deep link',async({p
  expect(new URL(page.url()).searchParams.has('tpl')).toBe(false);
 });
 test('the Toy author is followable and credited on the built-in AI template',async({page})=>{
+ await fakeSdk(page);
  await expect(page.locator('.toy-author .follow-btn')).toHaveAttribute('href','https://space.bilibili.com/312249633');
  expect((await state(page)).credit).toEqual({template:'ai-models',author:'卡普迪姆',bilibili:'312249633'});
  await expect(page.locator('.credit-bar')).toContainText('模板来自 @卡普迪姆');
@@ -168,7 +182,7 @@ test('random drags across tiers never crash the page (tile ping-pong between con
  expect(new Set((await state(page)).rows.flatMap(r=>r.items).concat((await state(page)).pool).map(i=>i.id)).size).toBe(14);
 });
 test('follow button turns into 已关注 once the visitor follows the Toy author',async({page})=>{
- const fake=`window.__following=false;window.toy={isSupport:async a=>a==='getAuthorRelation',getAuthorRelation:async()=>({status:'ok',data:{isFollowing:window.__following}})};`;
+ const fake=`window.__following=false;window.toy={isSupport:async a=>a==='getAuthorRelation'||a==='checkInputSafety',checkInputSafety:async()=>({passed:true,status:'ok'}),getAuthorRelation:async()=>({status:'ok',data:{isFollowing:window.__following}})};`;
  await page.context().unroute('**/toy-sdk.js');await page.context().route('**/toy-sdk.js',r=>r.fulfill({contentType:'text/javascript',body:fake}));await page.reload();
  await expect(page.locator('.toy-author .follow-btn')).toHaveText('去关注');
  // The visitor goes to the author's space, follows, and comes back: the page re-checks when it becomes visible.
@@ -209,4 +223,39 @@ test('the library follows the template: its own contestants, or nothing for a bl
  // Blank board: no library of its own
  await page.getByRole('button',{name:'模板中心'}).click();await page.getByRole('button',{name:/空白/}).click();
  await expect(page.locator('.library-blank')).toContainText('没有自带选手');
+});
+test('content check: bad text is refused where it is typed, and only checked content carries the author',async({page})=>{
+ // No SDK (outside Bilibili): nothing can be checked, so the author's name appears nowhere
+ await expect(page.locator('.credit-bar')).toHaveCount(0);
+ expect(await exportAndDecode(page,'/tmp/tier-list-unchecked.png')).toBeUndefined();
+ await fakeSdk(page);
+ await expect(page.locator('.credit-bar')).toContainText('模板来自 @卡普迪姆');
+ expect(await exportAndDecode(page,'/tmp/tier-list-checked.png')).toBe('https://www.bilibili.com/toy/tier-list/?tpl=ai-models');
+ // Title: refused on commit, reverted
+ const title=page.getByRole('textbox',{name:'榜单标题'});
+ await title.fill('违规标题');await expect(page.locator('.credit-bar')).toHaveCount(0); // hidden mid-edit
+ await title.press('Enter');
+ await expect(page.getByText('标题有不能公开的内容')).toBeVisible();
+ await expect(title).toHaveValue('2026 AI 大模型排位');expect((await state(page)).title).toBe('2026 AI 大模型排位');
+ await expect(page.locator('.credit-bar')).toBeVisible();
+ // Tier label and contestant name: refused in the dialog, not saved
+ await page.getByRole('button',{name:'编辑等级 S+',exact:true}).click();await page.getByRole('textbox',{name:'等级名称'}).fill('违规');await page.getByRole('button',{name:'保存修改'}).click();
+ await expect(page.getByRole('alert')).toContainText('等级名有不能公开的内容');expect((await state(page)).rows[0].label).toBe('S+');
+ await page.getByRole('button',{name:'关闭'}).click();
+ await page.getByRole('button',{name:'自定义选手',exact:true}).click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('违规选手');await page.getByRole('button',{name:'添加选手',exact:true}).click();
+ await expect(page.getByRole('alert')).toContainText('选手名有不能公开的内容');expect((await state(page)).pool.some(i=>i.name==='违规选手')).toBe(false);
+ await page.getByRole('button',{name:'关闭'}).click();
+ // Text that arrived some other way (imported file, saved board): no author line, and export is refused
+ await page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('tier-studio-v1')??'{}');s.title='违规导入';localStorage.setItem('tier-studio-v1',JSON.stringify(s));});await page.reload();
+ await expect(page.locator('.credit-bar')).toHaveCount(0);
+ let downloaded=false;page.on('download',()=>{downloaded=true;});
+ await page.getByRole('button',{name:'导出图片'}).click();await expect(page.getByText('有不能公开的内容，改一下再导出')).toBeVisible();expect(downloaded).toBe(false);
+ // Uploaded pictures can't be checked: exported without the credit
+ await page.getByRole('textbox',{name:'榜单标题'}).fill('正常标题');await page.getByRole('textbox',{name:'榜单标题'}).press('Enter');
+ await expect.poll(async()=>(await state(page)).title).toBe('正常标题');
+ await page.getByRole('button',{name:'自定义选手',exact:true}).click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('图');
+ await page.getByRole('tab',{name:'上传图片'}).click();await page.locator('[role="dialog"] input[type=file]').setInputFiles({name:'a.png',mimeType:'image/png',buffer:await sharp({create:{width:20,height:20,channels:3,background:'#f00'}}).png().toBuffer()});
+ await expect(page.locator('.dropzone img')).toBeVisible();await page.getByRole('button',{name:'添加选手',exact:true}).click();
+ expect(await exportAndDecode(page,'/tmp/tier-list-upload.png')).toBeUndefined();
+ await expect(page.getByText('含自己上传的图片')).toBeVisible();
 });

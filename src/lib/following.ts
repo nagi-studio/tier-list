@@ -3,6 +3,7 @@
 // author's space to follow and came back. No polling.
 import {useSyncExternalStore} from 'react';
 import {followsToyAuthor} from './toySdk.ts';
+import {retryUnavailable} from './screening.ts';
 
 let following: boolean | null = null;
 const listeners = new Set<() => void>();
@@ -14,6 +15,6 @@ async function refresh() {
 
 export function watchToyAuthorFollow() {
   void refresh();
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void refresh(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { void refresh(); retryUnavailable(); } });
 }
 export const useFollowsToyAuthor = () => useSyncExternalStore(l => { listeners.add(l); return () => listeners.delete(l); }, () => following);

@@ -11,15 +11,23 @@ import IconPicker from './IconPicker';
 import TargetPicker from './TargetPicker';
 import {POOL} from '@/lib/ids';
 import {dispatch} from '@/store/editor';
+import {REJECTED_MESSAGE, screen} from '@/lib/screening';
 import {deleteItem} from '@/lib/actions';
 
 /** Create or edit a contestant. `isNew` items are added on save; existing ones are updated (and moved if needed). */
 export default function ItemDialog({item: initial, target: initialTarget = POOL, isNew, rows, onClose}: Extract<EditorModal, {kind: 'item'}> & DialogProps & {rows: Row[]}) {
-  const [item, setItem] = useState(initial), [target, setTarget] = useState(initialTarget), [busy, setBusy] = useState(false);
+  const [item, setItem] = useState(initial), [target, setTarget] = useState(initialTarget), [busy, setBusy] = useState(false), [rejected, setRejected] = useState(false);
   const name = item.name.trim();
-  function save(e: FormEvent<HTMLFormElement>) {
+  async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!name) return;
+    // Names other people will see go through the content check when they change (not per keystroke).
+    if (name !== initial.name) {
+      setBusy(true);
+      const verdict = await screen(name);
+      setBusy(false);
+      if (verdict === 'rejected') { setRejected(true); return; }
+    }
     const saved = {...item, name};
     dispatch(isNew ? {type: 'addItems', items: [saved], target} : {type: 'updateItem', item: saved, target});
     onClose();
@@ -30,9 +38,10 @@ export default function ItemDialog({item: initial, target: initialTarget = POOL,
       <div className="item-hero">
         <Logo item={item} size={56}/>
         <label className="hero-name">
-          <input autoFocus required maxLength={160} aria-label="名称" placeholder="输入选手名称" value={item.name} onChange={e => setItem({...item, name: e.target.value})}/>
+          <input autoFocus required maxLength={160} aria-label="名称" placeholder="输入选手名称" value={item.name} onChange={e => { setItem({...item, name: e.target.value}); setRejected(false); }}/>
           {item.provider && <small>{item.provider}</small>}
         </label>
+        {rejected && <p className="error-text" role="alert">选手名{REJECTED_MESSAGE}</p>}
       </div>
       <div className="field"><span className="field-label">图标</span><IconPicker item={item} onChange={fields => setItem({...item, ...fields})} onBusyChange={setBusy}/></div>
       <div className="field"><span className="field-label">放到哪里</span><TargetPicker rows={rows} value={target} onChange={setTarget}/></div>

@@ -13,12 +13,18 @@ export interface ToySdk {
 declare global { interface Window { toy?: ToySdk } }
 const sdk = () => window.toy;
 
-/** Resolves once the async SDK script has loaded (or failed / is absent). */
+const SDK_WAIT_MS = 5000;
+/**
+ * Resolves once the async SDK script has loaded, failed, or is absent. The script tag marks itself done
+ * (index.html), because its load/error event may have fired before anyone listens; the timeout covers a hung
+ * request so callers like export never wait forever.
+ */
 export function sdkReady(): Promise<ToySdk | undefined> {
   const script = document.getElementById('toy-sdk');
-  if (window.toy || !(script instanceof HTMLScriptElement)) return Promise.resolve(window.toy);
+  if (window.toy || !(script instanceof HTMLScriptElement) || script.dataset.done) return Promise.resolve(window.toy);
   return new Promise(resolve => {
-    const done = () => resolve(window.toy);
+    const done = () => { clearTimeout(timer); resolve(window.toy); };
+    const timer = setTimeout(done, SDK_WAIT_MS);
     script.addEventListener('load', done, {once: true});
     script.addEventListener('error', done, {once: true});
   });
@@ -44,15 +50,26 @@ export async function supports(ability: Ability): Promise<boolean> {
     return toy ? supportResponseSchema.parse(await toy.isSupport(ability)) : false;
   } catch { return false; }
 }
+export type Screening = 'passed' | 'rejected' | 'unavailable';
+/**
+ * Bilibili's content-safety check on text other people will see. 'unavailable' covers no SDK (outside
+ * Bilibili, local dev), not logged in, and the platform reporting it couldn't run — never treat it as passed.
+ */
+export async function screenText(text: string, scene: string): Promise<Screening> {
+  const toy = await sdkReady(); // the script loads async; don't judge before it has had a chance
+  if (!toy || !await supports('checkInputSafety')) return 'unavailable';
+  try {
+    const {passed, status} = safetySchema.parse(await toy.checkInputSafety({text, scene}));
+    return passed ? 'passed' : status === 'rejected' ? 'rejected' : 'unavailable';
+  } catch { return 'unavailable'; }
+}
+
+/** Share links: blocked when rejected or when the check exists but can't run; allowed where there's no SDK. */
 export async function checkText(text: string, scene: string): Promise<{ok: true} | {ok: false; message: string}> {
   if (!await supports('checkInputSafety')) return {ok: true};
-  try {
-    const toy = sdk();
-    if (!toy) throw Error('Toy SDK unavailable');
-    const {passed, status} = safetySchema.parse(await toy.checkInputSafety({text, scene}));
-    if (passed) return {ok: true};
-    return {ok: false, message: status === 'rejected' ? '标题或选手名里有不能公开的内容，改一下再分享' : '暂时没法检查内容，稍后再试'};
-  } catch { return {ok: false, message: '需要登录 B 站才能分享'}; }
+  const verdict = await screenText(text, scene);
+  if (verdict === 'passed') return {ok: true};
+  return {ok: false, message: verdict === 'rejected' ? '标题或选手名里有不能公开的内容，改一下再分享' : '暂时没法检查内容，登录 B 站后再试'};
 }
 export async function shareInApp(path: string) {
   const toy = sdk();

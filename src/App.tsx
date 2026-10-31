@@ -22,18 +22,19 @@ import ConfirmDialog from '@/features/dialogs/ConfirmDialog';
 import ShareDialog from '@/features/dialogs/ShareDialog';
 import ShareCard from '@/features/export/ShareCard';
 import {useMediaQuery} from '@/hooks/useMediaQuery';
-import {allItems, containerOf, fromCatalog, presetOf} from '@/lib/board';
+import {allItems, boardText, containerOf, fromCatalog, presetOf} from '@/lib/board';
 import {exportJson, exportPng, readBoardFile} from '@/lib/files';
 import {newItemId, POOL} from '@/lib/ids';
 import type {ContainerId} from '@/lib/ids';
 import {toast} from '@/lib/toast';
+import {screen} from '@/lib/screening';
 import {highlightItems} from '@/lib/highlight';
 import {clearIncomingShare, useIncomingShare} from '@/lib/share';
 import {dispatch, useEditor} from '@/store/editor';
 
 export default function App() {
   const {board, past, future, drag, saveError} = useEditor();
-  const [modal, setModal] = useState<EditorModal | null>(null), [libraryOpen, setLibraryOpen] = useState(false), [exporting, setExporting] = useState(false);
+  const [modal, setModal] = useState<EditorModal | null>(null), [libraryOpen, setLibraryOpen] = useState(false), [exporting, setExporting] = useState<{signed: boolean} | null>(null);
   const isMobile = useMediaQuery('(max-width: 900px)');
   const incoming = useIncomingShare();
   const shareRef = useRef<HTMLDivElement>(null), importRef = useRef<HTMLInputElement>(null);
@@ -50,12 +51,25 @@ export default function App() {
     if (isMobile) setLibraryOpen(false);
     highlightItems(items.map(item => item.id), {scroll: isMobile});
   }
+  /**
+   * The template author's name and the QR code only go on images whose text passed Bilibili's content check
+   * and that hold no uploaded pictures (the check can't see images), so nobody can attach an author's name
+   * to content they never approved. Rejected text isn't exported at all.
+   */
   async function handleExport() {
+    const verdict = await screen(boardText(board));
+    if (verdict === 'rejected') { toast('标题、等级或选手名里有不能公开的内容，改一下再导出'); return; }
+    const uploads = allItems(board).some(item => item.image);
+    const signed = verdict === 'passed' && !uploads;
     // Mount the off-screen share card synchronously, snapshot it, then unmount.
-    flushSync(() => setExporting(true));
-    try { if (!shareRef.current) return; await exportPng(shareRef.current, board.title); toast('图片已导出'); }
+    flushSync(() => setExporting({signed}));
+    try {
+      if (!shareRef.current) return;
+      await exportPng(shareRef.current, board.title);
+      toast(signed || !board.credit ? '图片已导出' : uploads ? '图片已导出。含自己上传的图片，所以不带模板署名' : '图片已导出。没能检查内容，所以不带模板署名和二维码');
+    }
     catch (e) { console.error({event: 'export_png_failed', title: board.title, error: e}); toast('导出失败，请重试或先保存 JSON'); }
-    finally { setExporting(false); }
+    finally { setExporting(null); }
   }
   async function handleImport(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -88,7 +102,7 @@ export default function App() {
     <Header theme={board.theme} saveError={saveError} onOpenTemplates={() => setModal({kind: 'template'})}/>
     <main className="workspace">
       <section className="editor">
-        <Toolbar exportQr={board.exportQr !== false} preset={presetOf(board)} canUndo={past.length > 0} canRedo={future.length > 0} exporting={exporting}
+        <Toolbar exportQr={board.exportQr !== false} preset={presetOf(board)} canUndo={past.length > 0} canRedo={future.length > 0} exporting={exporting != null}
           onExport={handleExport} onSaveJson={() => { exportJson(board); toast('JSON 已保存'); }} onImportJson={() => importRef.current?.click()}
           onOpenLibrary={() => setLibraryOpen(true)} onOpenModal={setModal}/>
         <Board board={board} dragId={drag?.id} touch={isMobile} onEditItem={editItem} onEditRow={row => setModal({kind: 'row', row: {...row}})} onNewItem={newItem}/>
@@ -107,7 +121,7 @@ export default function App() {
     {incoming?.status === 'error' && <ConfirmDialog title="链接打不开" description={incoming.error} confirmLabel="知道了" onConfirm={() => {}} onClose={clearIncomingShare}/>}
     {modal?.kind === 'reset' && <ConfirmDialog title="全部移回待定区？" description="所有选手回到待定区，标题和等级保留。可以撤销。" confirmLabel="移回待定区" onConfirm={() => dispatch({type: 'resetPlacements'})} onClose={closeModal}/>}
     {modal?.kind === 'import' && <ConfirmDialog title="导入这份榜单？" description={`「${modal.board.title}」· ${allItems(modal.board).length} 个选手。会替换当前画布，可以撤销。`} confirmLabel="导入榜单" onConfirm={() => { dispatch({type: 'importBoard', board: modal.board}); toast('榜单已导入'); }} onClose={closeModal}/>}
-    {exporting && <div className="share-stage" aria-hidden="true"><ShareCard ref={shareRef} board={board} showQr={board.exportQr !== false}/></div>}
+    {exporting && <div className="share-stage" aria-hidden="true"><ShareCard ref={shareRef} board={board} signed={exporting.signed} showQr={exporting.signed && board.exportQr !== false}/></div>}
     <Toaster theme={board.theme} position="bottom-center" offset={24}/>
   </div>;
 }

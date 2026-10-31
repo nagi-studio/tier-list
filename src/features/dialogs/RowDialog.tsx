@@ -9,14 +9,21 @@ import {COLORS} from '@/lib/board';
 import {cx} from '@/lib/utils';
 import {dispatch} from '@/store/editor';
 import {deleteRow} from '@/lib/actions';
+import {REJECTED_MESSAGE, screen} from '@/lib/screening';
 
 /** Rename, recolor, reorder or delete a tier. Reordering applies immediately; name/color on save. */
 export default function RowDialog({row: initial, index, total, onClose}: DialogProps & {row: Row; index: number; total: number}) {
-  const [row, setRow] = useState(initial);
+  const [row, setRow] = useState(initial), [rejected, setRejected] = useState(false), [busy, setBusy] = useState(false);
   const label = row.label.trim();
-  function save(e: FormEvent<HTMLFormElement>) {
+  async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!label) return;
+    if (label !== initial.label) {
+      setBusy(true);
+      const verdict = await screen(label);
+      setBusy(false);
+      if (verdict === 'rejected') { setRejected(true); return; }
+    }
     dispatch({type: 'updateRow', row: {...row, label}});
     onClose();
   }
@@ -28,12 +35,13 @@ export default function RowDialog({row: initial, index, total, onClose}: DialogP
     <form onSubmit={save}>
       <div className="row-hero">
         <span className="tier-chip" style={{background: row.color}}>{row.label || '?'}</span>
-        <label className="hero-name"><input autoFocus required maxLength={30} aria-label="等级名称" value={row.label} onChange={e => setRow({...row, label: e.target.value})}/></label>
+        <label className="hero-name"><input autoFocus required maxLength={30} aria-label="等级名称" value={row.label} onChange={e => { setRow({...row, label: e.target.value}); setRejected(false); }}/></label>
         <div className="row-move">
           <button type="button" className="icon-btn" aria-label="上移等级" disabled={index === 0} onClick={() => dispatch({type: 'moveRow', id: row.id, delta: -1})}><ChevronUp size={18}/></button>
           <button type="button" className="icon-btn" aria-label="下移等级" disabled={index === total - 1} onClick={() => dispatch({type: 'moveRow', id: row.id, delta: 1})}><ChevronDown size={18}/></button>
         </div>
       </div>
+      {rejected && <p className="error-text" role="alert">等级名{REJECTED_MESSAGE}</p>}
       <div className="field"><span className="field-label">颜色</span>
         <div className="swatches">
           {COLORS.map(color => <button type="button" key={color} style={{background: color}} aria-label={`颜色 ${color}`} className={cx('swatch', row.color === color && 'on')} onClick={() => setRow({...row, color})}>{row.color === color && <Check size={16}/>}</button>)}
@@ -46,7 +54,7 @@ export default function RowDialog({row: initial, index, total, onClose}: DialogP
         <Button type="button" className="btn ghost danger" disabled={total === 1} onClick={remove} title="里面的选手会回到待定区"><Trash2 size={15}/>删除等级</Button>
         <span className="spacer"/>
         <Button type="button" className="btn subtle" onClick={onClose}>取消</Button>
-        <Button type="submit" className="btn primary" disabled={!label}>保存修改</Button>
+        <Button type="submit" className="btn primary" disabled={!label || busy}>保存修改</Button>
       </div>
     </form>
   </Modal>;

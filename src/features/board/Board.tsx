@@ -13,7 +13,9 @@ import Pool from './Pool';
 import Trash from './Trash';
 import {TileFace} from './Tile';
 import CreditBar from './CreditBar';
-import {allItems, MAX_ROWS} from '@/lib/board';
+import TitleInput from './TitleInput';
+import {useScreening} from '@/lib/screening';
+import {allItems, boardText, MAX_ROWS} from '@/lib/board';
 import {deleteRow, endItemDrag} from '@/lib/actions';
 import {dispatch, getEditorState} from '@/store/editor';
 
@@ -54,6 +56,10 @@ function collisionPolicy(parse: ReturnType<typeof createDragParser>): CollisionD
 /** The exportable tier list plus the pool, sharing one drag context. `ref` points at the export canvas. */
 export default function Board({board, dragId, touch, onEditItem, onEditRow, onNewItem}: {board: BoardState; dragId?: ItemId; touch: boolean; onEditItem: (item: Item) => void; onEditRow: (row: Row) => void; onNewItem: (target: ContainerId) => void}) {
   const [source, setSource] = useState<DragSource | null>(null);
+  // "模板来自 @作者" only beside content that passed the check, and not while the title is mid-edit (screenshots).
+  const [editingTitle, setEditingTitle] = useState(false);
+  const verdict = useScreening(boardText(board));
+  const showCredit = verdict === 'passed' && !editingTitle;
   const parse = createDragParser(board);
   const settle = useRef<Settle>({settling: false, lastOver: null}).current;
   const collision = collisionFor(parse, settle);
@@ -108,10 +114,10 @@ export default function Board({board, dragId, touch, onEditItem, onEditRow, onNe
     onDragCancel={() => { dispatch({type: 'dragCancel'}); setSource(null); }}>
     <div className="export-canvas">
       <div className="board-heading">
-        <input className="board-title" aria-label="榜单标题" value={board.title} maxLength={160} placeholder="给榜单起个标题" onChange={e => dispatch({type: 'setTitle', title: e.target.value})}/>
+        <TitleInput key={board.title} title={board.title} onEditingChange={setEditingTitle}/>
         <span className="board-meta">{ranked} / {ranked + board.pool.length} 已排</span>
       </div>
-      {board.credit && <CreditBar credit={board.credit}/>}
+      {showCredit && board.credit && <CreditBar credit={board.credit}/>}
       <div className="tier-board">
         <SortableContext items={board.rows.map(r => rowDragId(r.id))} strategy={verticalListSortingStrategy}>
           {board.rows.map((row, index) => <TierRow key={row.id} row={row} index={index} total={board.rows.length} onEditItem={onEditItem} onEditRow={() => onEditRow(row)} onAddItem={() => onNewItem(row.id)}/>)}

@@ -79,6 +79,11 @@ export function initialState(models: CatalogEntry[] = []): Board {
   return {version: 1, title: '2026 AI 大模型排位', subtitle: '', rows: makeRows(), pool: picks.map(fromCatalog), theme: 'dark'};
 }
 export const allItems = (board: Board) => [...board.rows.flatMap(row => row.items), ...board.pool];
+/**
+ * Every piece of text the board shows to others (title, tier labels, contestant names), deduplicated and sorted
+ * so reordering by drag doesn't change it — it is the cache key for content screening.
+ */
+export const boardText = (board: Board) => [board.title, ...[...new Set([...board.rows.map(row => row.label), ...allItems(board).map(item => item.name)])].sort()].join('\n');
 // A missing result means the item has since been removed (for example by undo), not an invalid ID.
 export function containerOf(board: Board, id: ItemId): ContainerId | undefined {
   if (board.pool.some(item => item.id === id)) return POOL;

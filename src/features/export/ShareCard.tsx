@@ -11,12 +11,13 @@ import {cx} from '@/lib/utils';
  * of the editor's screen width. The QR code (with the app mark in it) sits beside the title, so the image
  * ends right after the last tier — no footer. It opens the same community template (or the Toy) — see toyLink.
  */
-export default function ShareCard({ref, board, showQr}: {ref?: Ref<HTMLDivElement>; board: Board; showQr: boolean}) {
+/** `signed`: show the template author (only for content that passed the content check — see App.handleExport). */
+export default function ShareCard({ref, board, signed, showQr}: {ref?: Ref<HTMLDivElement>; board: Board; signed: boolean; showQr: boolean}) {
   return <div ref={ref} className="share-card">
     <div className="sc-head">
       <div className="sc-title">
         <h1>{board.title}</h1>
-        {board.credit?.author && <span className="sc-credit">{board.credit.bilibili && <Avatar uid={board.credit.bilibili} size={22}/>}模板 by @{board.credit.author}</span>}
+        {signed && board.credit?.author && <span className="sc-credit">{board.credit.bilibili && <Avatar uid={board.credit.bilibili} size={22}/>}模板 by @{board.credit.author}</span>}
       </div>
       {showQr && <span className="sc-qr"><QrCode value={toyLink(board.credit)} size={96}/><small>同款模板</small></span>}
     </div>
