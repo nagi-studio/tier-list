@@ -14,7 +14,6 @@ Toy 里「模板中心」的社区模板，都来自这个仓库的 `templates/`
    {
      "$schema": "../schema.json",
      "title": "奶茶品牌排位",
-     "author": "你的 B 站昵称",
      "bilibili": "你的 B 站 UID",
      "tiers": "cn",
      "items": [

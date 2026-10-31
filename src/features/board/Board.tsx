@@ -12,7 +12,9 @@ import {Plus} from 'lucide-react';
 import TierRow from './TierRow';
 import Pool from './Pool';
 import {TileFace} from './Tile';
-import BrandMark from '@/components/BrandMark';
+import CanvasFooter from './CanvasFooter';
+import CreditBar from './CreditBar';
+import {cx} from '@/lib/utils';
 import {allItems, MAX_ROWS} from '@/lib/board';
 import {deleteRow, endItemDrag} from '@/lib/actions';
 import {dispatch} from '@/store/editor';
@@ -41,7 +43,7 @@ function collisionFor(parse: ReturnType<typeof createDragParser>): CollisionDete
 const measuring = {droppable: {strategy: MeasuringStrategy.Always}};
 
 /** The exportable tier list plus the pool, sharing one drag context. `ref` points at the export canvas. */
-export default function Board({ref, board, dragId, touch, onEditItem, onEditRow, onNewItem}: {ref: Ref<HTMLDivElement>; board: BoardState; dragId?: ItemId; touch: boolean; onEditItem: (item: Item) => void; onEditRow: (row: Row) => void; onNewItem: (target: ContainerId) => void}) {
+export default function Board({ref, board, dragId, touch, exporting, onEditItem, onEditRow, onNewItem}: {ref: Ref<HTMLDivElement>; board: BoardState; dragId?: ItemId; touch: boolean; exporting: boolean; onEditItem: (item: Item) => void; onEditRow: (row: Row) => void; onNewItem: (target: ContainerId) => void}) {
   const [source, setSource] = useState<DragSource | null>(null);
   const parse = createDragParser(board);
   const collision = collisionFor(parse);
@@ -88,17 +90,18 @@ export default function Board({ref, board, dragId, touch, onEditItem, onEditRow,
       setSource(null);
     }}
     onDragCancel={() => { dispatch({type: 'dragCancel'}); setSource(null); }}>
-    <div className="export-canvas" ref={ref}>
+    <div className={cx('export-canvas', exporting && 'is-exporting')} ref={ref}>
       <div className="board-heading">
         <input className="board-title" aria-label="榜单标题" value={board.title} maxLength={160} placeholder="给榜单起个标题" onChange={e => dispatch({type: 'setTitle', title: e.target.value})}/>
         <span className="board-meta">{ranked} / {ranked + board.pool.length} 已排</span>
       </div>
+      {board.credit && <CreditBar credit={board.credit}/>}
       <div className="tier-board">
         <SortableContext items={board.rows.map(r => rowDragId(r.id))} strategy={verticalListSortingStrategy}>
           {board.rows.map((row, index) => <TierRow key={row.id} row={row} index={index} total={board.rows.length} onEditItem={onEditItem} onEditRow={() => onEditRow(row)} onAddItem={() => onNewItem(row.id)}/>)}
         </SortableContext>
       </div>
-      <BrandMark withName className="canvas-foot"/>
+      <CanvasFooter credit={board.credit} showQr={board.exportQr !== false}/>
     </div>
     <button type="button" className="add-row" onClick={() => dispatch({type: 'addRow'})} disabled={board.rows.length >= MAX_ROWS}><Plus size={15}/>添加等级</button>
     <Pool dragKind={source?.kind} items={board.pool} rankedCount={ranked} touch={touch} onEditItem={onEditItem} onAddItem={() => onNewItem(POOL)}/>

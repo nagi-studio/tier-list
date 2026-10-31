@@ -19,12 +19,12 @@ export type EditorAction =
   | {type: 'moveRow'; id: RowId; delta: -1 | 1}
   | {type: 'moveRowTo'; id: RowId; overId: RowId}
   | {type: 'applyPreset'; preset: Preset}
-  | {type: 'replaceContestants'; title: string; pool: Item[]}
-  | {type: 'loadTemplate'; board: Pick<Board, 'title' | 'rows' | 'pool'>}
+  | {type: 'loadTemplate'; board: B.TemplateBoard}
   | {type: 'importBoard'; board: Board}
   | {type: 'setTitle'; title: string}
   | {type: 'resetPlacements'}
   | {type: 'toggleTheme'}
+  | {type: 'toggleExportQr'}
   | {type: 'undo'}
   | {type: 'redo'}
   | {type: 'dragCancel'}
@@ -61,11 +61,11 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'moveRowTo': return commit(B.moveRowTo({board: state.board, rowId: action.id, overRowId: action.overId}));
     case 'deleteRow': return commit(B.deleteRow(state.board, action.id));
     case 'applyPreset': return commit(B.applyTierPreset(state.board, action.preset));
-    case 'replaceContestants': return commit(B.replaceContestants({board: state.board, title: action.title, pool: action.pool}));
     case 'loadTemplate': return commit(B.loadTemplate(state.board, action.board));
     case 'resetPlacements': return commit(B.resetPlacements(state.board));
     case 'setTitle': return commit(B.setTitle(state.board, action.title));
     case 'toggleTheme': return commit(B.toggleTheme(state.board));
+    case 'toggleExportQr': return commit(B.toggleExportQr(state.board));
     case 'importBoard': return commit(action.board);
     case 'undo': {
       const board = state.past.at(-1);

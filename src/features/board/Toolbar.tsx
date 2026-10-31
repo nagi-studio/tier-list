@@ -2,7 +2,7 @@ import type {ComponentProps} from 'react';
 import type {LucideIcon} from 'lucide-react';
 import type {EditorModal} from '@/features/dialogs/types';
 import {DropdownMenu, ToggleGroup} from 'radix-ui';
-import {Undo2, Redo2, MoreHorizontal, LayoutGrid, RotateCcw, FileJson, Upload, Library, Download, Share2} from 'lucide-react';
+import {Undo2, Redo2, MoreHorizontal, LayoutGrid, RotateCcw, FileJson, Upload, Library, Download, Share2, QrCode as QrCodeIcon, Check} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {PRESET_OPTIONS} from '@/lib/constants';
 import {dispatch} from '@/store/editor';
@@ -11,7 +11,7 @@ function MenuItem({icon: Icon, children, ...props}: ComponentProps<typeof Dropdo
   return <DropdownMenu.Item className="menu-item" {...props}><Icon size={16}/>{children}</DropdownMenu.Item>;
 }
 
-export default function Toolbar({preset, canUndo, canRedo, exporting, onExport, onSaveJson, onImportJson, onOpenLibrary, onOpenModal}: {preset: string; canUndo: boolean; canRedo: boolean; exporting: boolean; onExport: () => void; onSaveJson: () => void; onImportJson: () => void; onOpenLibrary: () => void; onOpenModal: (modal: EditorModal) => void}) {
+export default function Toolbar({preset, canUndo, canRedo, exporting, exportQr, onExport, onSaveJson, onImportJson, onOpenLibrary, onOpenModal}: {preset: string; canUndo: boolean; canRedo: boolean; exporting: boolean; exportQr: boolean; onExport: () => void; onSaveJson: () => void; onImportJson: () => void; onOpenLibrary: () => void; onOpenModal: (modal: EditorModal) => void}) {
   return <div className="toolbar">
     <ToggleGroup.Root type="single" className="segmented" aria-label="等级模板" value={preset} onValueChange={v => { const option = PRESET_OPTIONS.find(option => option.key === v); if (option) dispatch({type: 'applyPreset', preset: option.key}); }}>
       {PRESET_OPTIONS.map(p => <ToggleGroup.Item key={p.key} value={p.key} aria-label={p.name}>{p.label}</ToggleGroup.Item>)}
@@ -25,6 +25,9 @@ export default function Toolbar({preset, canUndo, canRedo, exporting, onExport, 
           <DropdownMenu.Content className="menu" align="end" sideOffset={6}>
             <MenuItem icon={LayoutGrid} onSelect={() => onOpenModal({kind: 'template'})}>模板中心…</MenuItem>
             <MenuItem icon={RotateCcw} onSelect={() => onOpenModal({kind: 'reset'})}>全部移回待定区…</MenuItem>
+            <DropdownMenu.CheckboxItem className="menu-item" checked={exportQr} onSelect={e => e.preventDefault()} onCheckedChange={() => dispatch({type: 'toggleExportQr'})}>
+              <QrCodeIcon size={16}/>导出图片带二维码<DropdownMenu.ItemIndicator className="menu-chevron"><Check size={15}/></DropdownMenu.ItemIndicator>
+            </DropdownMenu.CheckboxItem>
             <DropdownMenu.Separator className="menu-sep"/>
             <MenuItem icon={FileJson} onSelect={onSaveJson}>保存 JSON</MenuItem>
             <MenuItem icon={Upload} onSelect={onImportJson}>导入 JSON…</MenuItem>

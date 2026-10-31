@@ -1,9 +1,9 @@
 // Shared template boundary for authoring JSON, community fetches and share links.
 import {z} from 'zod';
-import {colorAt, TIER_PRESETS, presetSchema} from './board.ts';
+import {colorAt, TIER_PRESETS, presetSchema, creditSchema} from './board.ts';
 import {newItemId, newRowId} from './ids';
 import {mapNonEmpty} from './nonEmpty';
-import type {Board, Item, Row} from './board.ts';
+import type {Board, Credit, Item, Row, TemplateBoard} from './board.ts';
 
 export const LIMITS = {title: 60, description: 200, author: 40, tags: 5, tag: 12, tiers: 30, label: 30, items: 200, name: 60, emoji: 8};
 export const ASSET_RE = /^community\/[a-z0-9-]+\/[a-f0-9]{12}\.webp$/;
@@ -24,6 +24,7 @@ const tierInputSchema = z.union([requiredText(LIMITS.label).transform(label => (
 const uidString = z.string().trim().regex(/^\d{1,19}$/, {
   error: '必须是 B 站 UID（空间链接 space.bilibili.com/ 后面那串数字）',
 });
+const bvidSchema = z.string().trim().regex(/^BV[0-9A-Za-z]{10}$/, {error: '必须是 BV 号，比如 BV1xx411c7mD'});
 const templateItemSchema = z.object({
   name: requiredText(LIMITS.name).describe('选手名称'),
   emoji: optionalText(LIMITS.emoji).describe('Emoji 或 1–3 个字'),
@@ -46,6 +47,7 @@ export function createTemplateSchema({allowImages = false, knownIcons}: Template
     description: optionalText(LIMITS.description).describe('一句话介绍，显示在模板中心'),
     author: optionalText(LIMITS.author).describe('署名，显示在模板中心（建议用 B 站昵称）'),
     bilibili: z.union([uidString, z.number().nonnegative().multipleOf(1).lt(1e19).transform(String).pipe(uidString)]).nullish().transform(v => v ?? undefined).describe('你的 B 站 UID：space.bilibili.com/ 后面那串数字。模板中心点署名会跳到你的空间'),
+    video: bvidSchema.nullish().transform(v => v ?? undefined).describe('可选：你的一个视频的 BV 号，模板中心会显示「看视频」'),
     tags: z.array(requiredText(LIMITS.tag)).max(LIMITS.tags).nullish().transform(v => v?.length ? v : undefined).describe('最多 5 个标签，每个最多 12 个字'),
     tiers: z.union([
       presetSchema.describe('classic = S+ S A B C D；cn = 夯 顶级 人上人 NPC 拉完了；numeric = T0–T4')
@@ -67,8 +69,8 @@ export function createTemplateSchema({allowImages = false, knownIcons}: Template
     template.items.forEach((item, i) => {
       if (item.tier != null && item.tier >= template.tiers.length) ctx.addIssue({code: 'custom', path: ['items', i, 'tier'], message: `必须是 0 到 ${template.tiers.length - 1} 的整数`});
     });
-  }).transform(({title, description, author, bilibili, tags, tiers, items}) => ({
-    title, ...(description && {description}), ...(author && {author}), ...(bilibili && {bilibili}), ...(tags && {tags}), tiers, items,
+  }).transform(({title, description, author, bilibili, video, tags, tiers, items}) => ({
+    title, ...(description && {description}), ...(author && {author}), ...(bilibili && {bilibili}), ...(video && {video}), ...(tags && {tags}), tiers, items,
   }));
 }
 export const templateSchema = createTemplateSchema();
@@ -95,6 +97,7 @@ function templateErrors(issues: z.core.$ZodIssue[], {prefix = [], allowImages = 
         return templateErrors(issue.errors[branch] ?? [], {prefix: keys, allowImages});
       }
       if (field === 'bilibili') return [`${path} 必须是 B 站 UID（空间链接 space.bilibili.com/ 后面那串数字）`];
+      if (field === 'video') return [`${path} 必须是 BV 号，比如 BV1xx411c7mD`];
     }
     if (!path) return ['模板必须是一个 JSON 对象'];
     if (issue.message === '缺少') return [`缺少 ${path}`];
@@ -123,14 +126,14 @@ export function normalizeTemplate(raw: unknown, options: TemplateOptions = {}): 
     : {status: 'invalid', template: null, errors: templateErrors(result.error.issues, options)};
 }
 
-export function templateToBoard(tpl: Template): Pick<Board, 'title' | 'rows' | 'pool'> {
+export function templateToBoard(tpl: Template, credit?: Credit): TemplateBoard {
   const toItem = ({tier: _tier, ...item}: TemplateItem): Item => ({...item, id: newItemId()});
   const rows = mapNonEmpty(tpl.tiers, (tier, index): Row => ({
     id: newRowId(), label: tier.label, color: tier.color,
     items: tpl.items.filter(item => item.tier === index).map(toItem),
   }));
   const pool = tpl.items.filter(item => item.tier == null).map(toItem);
-  return {title: tpl.title, rows, pool};
+  return {title: tpl.title, rows, pool, ...(credit && {credit})};
 }
 
 export function boardToTemplate(board: Board, {withPlacement = true} = {}): {template: Template; droppedImages: number} {
@@ -144,11 +147,13 @@ export function boardToTemplate(board: Board, {withPlacement = true} = {}): {tem
 }
 
 // Compact JSON → deflate → base64url, with z (deflate-raw) or j (plain UTF-8) marker.
-const compact = (tpl: Template) => ({
+const compact = (tpl: Template, credit?: Credit) => ({
+  ...(credit && {c: [credit.template, credit.author ?? '', credit.bilibili ?? '']}),
   t: tpl.title, r: tpl.tiers.map(t => [t.label, t.color.slice(1)]),
   i: tpl.items.map(it => [it.name, it.emoji || '', it.icon || '', it.asset || '', it.tier ?? -1]),
 });
 const compactSchema = z.object({
+  c: z.tuple([z.string(), z.string(), z.string()]).optional(),
   t: z.string(), r: z.array(z.tuple([z.string(), z.string()])),
   i: z.array(z.tuple([z.string(), z.string(), z.string(), z.string(), z.number()])),
 });
@@ -161,15 +166,16 @@ const fromB64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').repl
 async function pipe(bytes: Uint8Array<ArrayBuffer>, stream: CompressionStream | DecompressionStream) {
   return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
 }
-export async function encodeShare(tpl: Template) {
-  const bytes = new TextEncoder().encode(JSON.stringify(compact(tpl)));
+export async function encodeShare(tpl: Template, credit?: Credit) {
+  const bytes = new TextEncoder().encode(JSON.stringify(compact(tpl, credit)));
   if (typeof CompressionStream === 'function') return `z${toB64url(await pipe(bytes, new CompressionStream('deflate-raw')))}`;
   return `j${toB64url(bytes)}`;
 }
-export async function decodeShare(code: unknown, options?: TemplateOptions) {
+/** Decode a share code. A malformed credit is dropped rather than failing the whole link. */
+export async function decodeShare(code: unknown, options?: TemplateOptions): Promise<{template: Template; credit?: Credit}> {
   const parsedCode = z.string().min(2).max(20000).safeParse(code);
   if (!parsedCode.success) throw Error('分享链接不完整');
-  let raw: unknown;
+  let raw: unknown, credit: Credit | undefined;
   try {
     const value = parsedCode.data, bytes = fromB64url(value.slice(1));
     let json: string;
@@ -177,9 +183,15 @@ export async function decodeShare(code: unknown, options?: TemplateOptions) {
     else if (value[0] === 'j') json = new TextDecoder().decode(bytes);
     else throw Error();
     const compactData: unknown = JSON.parse(json);
-    raw = expand(compactSchema.parse(compactData));
+    const parsed = compactSchema.parse(compactData);
+    raw = expand(parsed);
+    if (parsed.c) {
+      const [template, author, bilibili] = parsed.c;
+      const result = creditSchema.safeParse({template, ...(author && {author}), ...(bilibili && {bilibili})});
+      if (result.success) credit = result.data;
+    }
   } catch { throw Error('分享链接已损坏，没法读取'); }
   const {template, errors} = normalizeTemplate(raw, options);
   if (!template) throw Error(`分享的模板有问题：${errors[0]}`);
-  return template;
+  return {template, ...(credit && {credit})};
 }

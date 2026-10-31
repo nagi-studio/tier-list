@@ -18,9 +18,25 @@ import {brandKeys} from '../src/components/BrandAvatar.tsx';
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024, IMAGE_SIZE = 128;
 
-export async function buildTemplates({root = process.cwd(), check = false} = {}) {
+const cardSchema = z.object({code: z.literal(0), data: z.object({card: z.object({name: z.string().min(1), face: z.string()})})});
+/**
+ * Look up a Bilibili account's nickname and avatar by UID (public card API). Resolved at build time so
+ * visitors never call Bilibili APIs from the Toy. Returns null when the lookup fails; the build continues.
+ */
+export async function lookupBilibili(uid: string): Promise<{name: string; avatar: string} | null> {
+  try {
+    const res = await fetch(`https://api.bilibili.com/x/web-interface/card?mid=${uid}`, {
+      headers: {'user-agent': 'Mozilla/5.0 (tier-list build)'}, signal: AbortSignal.timeout(8000),
+    });
+    const {data} = cardSchema.parse(await res.json());
+    const face = data.card.face.replace(/^http:/, 'https:');
+    return {name: data.card.name.slice(0, 40), avatar: /^https:\/\/i\d\.hdslb\.com\/bfs\/[\w/.-]+$/.test(face) ? `${face}@96w_96h.webp` : ''};
+  } catch { return null; }
+}
+
+export async function buildTemplates({root = process.cwd(), check = false, lookup = lookupBilibili} = {}) {
   const srcDir = join(root, 'templates'), outDir = join(root, 'public/community');
-  const knownIcons = new Set(brandKeys), errors: string[] = [], index: CommunityEntry[] = [];
+  const knownIcons = new Set(brandKeys), errors: string[] = [], warnings: string[] = [], index: CommunityEntry[] = [];
   const ids = (await readdir(srcDir, {withFileTypes: true})).filter(d => d.isDirectory()).map(d => d.name).sort();
   // Overwrite in place and prune stale files afterwards: wiping the folder makes a running Vite dev server
   // forget the public files until it restarts.
@@ -60,8 +76,13 @@ export async function buildTemplates({root = process.cwd(), check = false} = {})
     }
 
     if (!check) { await writeFile(join(outDir, `${id}.json`), JSON.stringify(template)); written.add(`${id}.json`); }
+    // The account behind the UID decides the displayed name; `author` is only a fallback when the lookup fails.
+    const account = !check && template.bilibili ? await lookup(template.bilibili) : null;
+    if (!check && template.bilibili && !account) warnings.push(`${where}: 没查到 UID ${template.bilibili} 的昵称，先用 author 字段`);
+    const author = account?.name ?? template.author ?? (template.bilibili && `UID ${template.bilibili}`);
     index.push({
-      id, title: template.title, description: template.description, author: template.author, bilibili: template.bilibili, tags: template.tags,
+      id, title: template.title, description: template.description, author: author || undefined, bilibili: template.bilibili,
+      avatar: account?.avatar || undefined, video: template.video, tags: template.tags,
       count: template.items.length,
       preview: template.items.slice(0, 5).map(({name, emoji, icon, asset}) => ({name, emoji, icon, asset})),
     });
@@ -73,12 +94,13 @@ export async function buildTemplates({root = process.cwd(), check = false} = {})
       if (file.isFile() && !written.has(rel)) await rm(join(outDir, rel));
     }
   }
-  return {index, errors};
+  return {index, errors, warnings};
 }
 
 if (import.meta.main) {
   const check = process.argv.includes('--check');
-  const {index, errors} = await buildTemplates({check});
+  const {index, errors, warnings} = await buildTemplates({check});
+  warnings.forEach(w => console.warn(`⚠️ ${w}`));
   if (errors.length) {
     console.error(`❌ ${errors.length} 个问题：\n${errors.map(e => `  - ${e}`).join('\n')}`);
     process.exit(1);

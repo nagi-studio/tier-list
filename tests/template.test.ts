@@ -4,6 +4,8 @@ import {test} from 'bun:test';
 import assert from 'node:assert/strict';
 import {mkdtemp, mkdir, writeFile, readFile, readdir} from 'node:fs/promises';
 import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {templateIdSchema} from '../src/lib/ids';
 import sharp from 'sharp';
 import {normalizeTemplate, templateSchema, templateToBoard, boardToTemplate, encodeShare, decodeShare} from '../src/lib/template.ts';
 import {boardSchema, initialState} from '../src/lib/board.ts';
@@ -48,7 +50,7 @@ test('share codes round-trip and reject garbage', async () => {
   const code = await encodeShare(template);
   assert.match(code, /^z[A-Za-z0-9_-]+$/);
   assert.ok(code.length < 600, `code length ${code.length}`);
-  const back = await decodeShare(code);
+  const {template: back} = await decodeShare(code);
   assert.deepEqual(back.items, template.items);
   assert.deepEqual(back.tiers, template.tiers);
   await assert.rejects(decodeShare('zzzz'), /损坏/);
@@ -106,4 +108,37 @@ test('template boundary rejects unsafe fields, out-of-range placements and malfo
   const malformed: unknown[] = [null, {t: 'x', r: 'cn', i: []}, {t: 'x', r: [['S', 'ff7f7f']], i: [[true, '', '', '', 0]]}];
   for (const value of malformed) await assert.rejects(decodeShare(`j${Buffer.from(JSON.stringify(value)).toString('base64url')}`), /损坏/);
   await assert.rejects(decodeShare(null), /不完整/);
+});
+
+test('share codes carry the template credit; a malformed credit is dropped, not fatal', async () => {
+  const template = must(normalizeTemplate(sample).template);
+  const credit = {template: templateIdSchema.parse('milk-tea'), author: '卡普迪姆', bilibili: '312249633'};
+  const decoded = await decodeShare(await encodeShare(template, credit));
+  assert.deepEqual(decoded.credit, credit);
+  assert.deepEqual(templateToBoard(decoded.template, decoded.credit).credit, credit);
+  const noCredit = await decodeShare(await encodeShare(template));
+  assert.equal(noCredit.credit, undefined);
+});
+
+test('templates accept a BV video and reject other formats', () => {
+  assert.equal(must(normalizeTemplate({...sample, video: 'BV1xx411c7mD'}).template).video, 'BV1xx411c7mD');
+  assert.ok(normalizeTemplate({...sample, video: 'av170001'}).errors.some(e => e.includes('BV 号')));
+});
+
+test('build resolves the author name and avatar from the Bilibili UID, falling back to `author`', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'tpl-uid-'));
+  await mkdir(join(root, 'src/data'), {recursive: true});
+  for (const [id, extra] of [['found', {bilibili: '1'}], ['missing', {bilibili: '2', author: '备用名'}], ['plain', {author: '只写了名字'}]] as const) {
+    await mkdir(join(root, 'templates', id), {recursive: true});
+    await writeFile(join(root, 'templates', id, 'template.json'), JSON.stringify({title: id, tiers: 'classic', items: [{name: 'a'}], ...extra}));
+  }
+  const lookup = async (uid: string) => uid === '1' ? {name: '真名', avatar: 'https://i0.hdslb.com/bfs/face/x.jpg@96w_96h.webp'} : null;
+  const {index, errors, warnings} = await buildTemplates({root, lookup});
+  assert.deepEqual(errors, []);
+  const byId = Object.fromEntries(index.map(t => [t.id, t]));
+  assert.equal(byId.found?.author, '真名');
+  assert.match(byId.found?.avatar ?? '', /hdslb/);
+  assert.equal(byId.missing?.author, '备用名');
+  assert.equal(byId.plain?.author, '只写了名字');
+  assert.equal(warnings.length, 1);
 });

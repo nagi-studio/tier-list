@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {itemIdSchema, rowIdSchema, modelIdSchema, newItemId, newRowId, POOL} from './ids';
+import {itemIdSchema, rowIdSchema, modelIdSchema, templateIdSchema, newItemId, newRowId, POOL} from './ids';
 import type {ItemId, RowId, ModelId, ContainerId, DropTarget} from './ids';
 import {mapNonEmpty, insertNonEmpty} from './nonEmpty';
 import type {NonEmpty} from './nonEmpty';
@@ -33,10 +33,18 @@ export const itemSchema = z.object({
 export const rowSchema = z.object({
   id: rowIdSchema, label: z.string().max(30), color: hexColorSchema, items: z.array(itemSchema),
 });
+export const bilibiliUidSchema = z.string().regex(/^\d{1,19}$/);
+/** Which community template the board came from, so exports and share links can credit its author. */
+export const creditSchema = z.object({
+  template: templateIdSchema, author: z.string().max(40).optional(), bilibili: bilibiliUidSchema.optional(),
+});
+export type Credit = z.infer<typeof creditSchema>;
 export const boardSchema = z.object({
   version: z.literal(1), title: z.string().max(160), subtitle: z.string().max(500),
   rows: z.tuple([rowSchema], rowSchema).refine(rows => rows.length <= MAX_ROWS), pool: z.array(itemSchema),
   theme: z.enum(['dark', 'light']).default('dark'),
+  credit: creditSchema.optional().catch(undefined),
+  exportQr: z.boolean().optional(),
 }).superRefine((board, ctx) => {
   const ids = new Set<string>();
   const unique = (id: string, path: (string | number)[]) => {
@@ -152,7 +160,13 @@ export function applyTierPreset(board: Board, key: Preset): Board {
   return {...board, rows, pool: [...board.pool, ...board.rows.slice(labels.length).flatMap(row => row.items)]};
 }
 export const resetPlacements = (board: Board): Board => ({...board, pool: allItems(board), rows: mapNonEmpty(board.rows, row => ({...row, items: []}))});
-export const replaceContestants = ({board, title, pool}: {board: Board; title: string; pool: Item[]}): Board => ({...board, title, pool, rows: mapNonEmpty(board.rows, row => ({...row, items: []}))});
-export const loadTemplate = (board: Board, {title, rows, pool}: Pick<Board, 'title' | 'rows' | 'pool'>): Board => ({...board, title, rows, pool});
+export const replaceContestants = ({board, title, pool}: {board: Board; title: string; pool: Item[]}): TemplateBoard => ({title, pool, rows: mapNonEmpty(board.rows, row => ({...row, items: []}))});
+export type TemplateBoard = Pick<Board, 'title' | 'rows' | 'pool' | 'credit'>;
+/** Replace title, tiers and contestants; `credit` is replaced too (absent = not a community template). */
+export const loadTemplate = (board: Board, {title, rows, pool, credit}: TemplateBoard): Board => {
+  const {credit: _previous, ...rest} = board;
+  return {...rest, title, rows, pool, ...(credit && {credit})};
+};
+export const toggleExportQr = (board: Board): Board => ({...board, exportQr: board.exportQr === false});
 export const setTitle = (board: Board, title: string): Board => ({...board, title});
 export const toggleTheme = (board: Board): Board => ({...board, theme: board.theme === 'light' ? 'dark' : 'light'});

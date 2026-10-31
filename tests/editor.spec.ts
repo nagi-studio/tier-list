@@ -1,4 +1,6 @@
 import type {Page, BrowserContext, Locator} from '@playwright/test';
+import sharp from 'sharp';
+import jsQR from 'jsqr';
 import {must} from './helpers';
 import {boardSchema} from '../src/lib/board';
 import {test,expect} from '@playwright/test';
@@ -97,4 +99,24 @@ test('sharing is blocked when the platform content check rejects the text',async
  await page.getByRole('button',{name:'关闭'}).click();await page.getByRole('textbox',{name:'榜单标题'}).fill('正常标题');
  await page.getByRole('button',{name:'分享',exact:true}).click();await page.getByRole('button',{name:'生成分享链接'}).click();
  await expect(page.getByRole('textbox',{name:'分享链接'})).toBeVisible();
+});
+test('template credit, follow link, export QR code and ?tpl= deep link',async({page})=>{
+ const decodeQr=async(file:string)=>{const {data,info}=await sharp(file).ensureAlpha().raw().toBuffer({resolveWithObject:true});return jsQR(new Uint8ClampedArray(data),info.width,info.height)?.data;};
+ await page.getByRole('button',{name:'更多操作'}).click();await page.getByRole('menuitem',{name:'模板中心…'}).click();
+ await expect(page.locator('.template-author').first()).toContainText('卡普迪姆');
+ await page.getByRole('button',{name:/编程语言排位/}).click();
+ await expect(page.locator('.credit-bar')).toContainText('模板来自 @卡普迪姆');
+ await expect(page.locator('.credit-bar .follow-btn')).toHaveAttribute('href','https://space.bilibili.com/312249633');
+ const dl=page.waitForEvent('download');await page.getByRole('button',{name:'导出图片'}).click();const file='/tmp/tier-list-credit.png';await (await dl).saveAs(file);
+ expect(await decodeQr(file)).toBe('https://www.bilibili.com/toy/tier-list/?tpl=programming-languages');
+ await expect(page.locator('.qr')).toBeHidden(); // QR only exists in the export
+ // Turning the QR off removes it from exports
+ await page.getByRole('button',{name:'更多操作'}).click();await page.getByRole('menuitemcheckbox',{name:'导出图片带二维码'}).click();await page.keyboard.press('Escape');
+ const dl2=page.waitForEvent('download');await page.getByRole('button',{name:'导出图片'}).click();await (await dl2).saveAs('/tmp/tier-list-noqr.png');
+ expect(await decodeQr('/tmp/tier-list-noqr.png')).toBeUndefined();
+ // Scanning the code lands on the same template, with credit
+ await page.goto('/?tpl=drinks');await page.getByRole('button',{name:'打开',exact:true}).click();
+ await expect.poll(async()=>(await state(page)).title).toBe('今天喝什么');
+ expect((await state(page)).credit?.bilibili).toBe('312249633');
+ expect(new URL(page.url()).searchParams.has('tpl')).toBe(false);
 });

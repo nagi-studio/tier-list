@@ -7,7 +7,7 @@ export interface ToySdk {
   checkInputSafety(input: {text: string; scene: string}): Promise<unknown>;
   share(input: {path: string}): Promise<unknown>;
   getQrCode(input: {path: string; size: number}): Promise<unknown>;
-  navigate(input: {type: 'space'; id: string}): Promise<unknown>;
+  navigate(input: {type: 'space' | 'video'; id: string}): Promise<unknown>;
 }
 declare global { interface Window { toy?: ToySdk } }
 const sdk = () => window.toy;
@@ -45,5 +45,13 @@ export function openSpace(uid: string) {
   const toy = sdk();
   if (!toy?.navigate) return false;
   toy.navigate({type: 'space', id: uid}).catch(() => window.open(`https://space.bilibili.com/${uid}`, '_blank', 'noopener'));
+  return true;
+}
+
+/** Open a video page. Same gesture rule as openSpace. */
+export function openVideo(bvid: string) {
+  const toy = sdk();
+  if (!toy?.navigate) return false;
+  toy.navigate({type: 'video', id: bvid}).catch(() => window.open(`https://www.bilibili.com/video/${bvid}`, '_blank', 'noopener'));
   return true;
 }

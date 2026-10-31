@@ -1,9 +1,9 @@
-import {modelIdSchema} from '../src/lib/ids';
+import {modelIdSchema, templateIdSchema} from '../src/lib/ids';
 import {must} from './helpers';
 import {test} from 'bun:test';
 import assert from 'node:assert/strict';
 import {editorReducer, createInitialState, createEditorStore} from '../src/store/editor.ts';
-import {initialState, allItems, boardSchema} from '../src/lib/board.ts';
+import {initialState, allItems, boardSchema, replaceContestants} from '../src/lib/board.ts';
 
 const start = () => createInitialState(initialState(['a', 'b', 'c'].map(id => ({id: modelIdSchema.parse(id), name: id}))));
 const memoryStorage = () => { const m = new Map<string, string>(); return {getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => m.set(k, v), data: m}; };
@@ -97,4 +97,24 @@ test('insert tiers at a position and clear a tier back to the pool', () => {
   s = editorReducer(s, {type: 'clearRow', id: row});
   assert.equal(must(s.board.rows[0]).items.length, 0);
   assert.equal(s.board.pool.length, 3);
+});
+
+test('loading a template replaces the credit; built-in templates clear it', () => {
+  let s = start();
+  const credit = {template: templateIdSchema.parse('drinks'), author: '卡普迪姆'};
+  s = editorReducer(s, {type: 'loadTemplate', board: {title: 'x', rows: s.board.rows, pool: [], credit}});
+  assert.deepEqual(s.board.credit, credit);
+  s = editorReducer(s, {type: 'loadTemplate', board: replaceContestants({board: s.board, title: 'y', pool: []})});
+  assert.equal(s.board.credit, undefined);
+  s = editorReducer(s, {type: 'undo'});
+  assert.deepEqual(s.board.credit, credit);
+});
+
+test('export QR toggle defaults to on and flips', () => {
+  let s = start();
+  assert.notEqual(s.board.exportQr, false);
+  s = editorReducer(s, {type: 'toggleExportQr'});
+  assert.equal(s.board.exportQr, false);
+  s = editorReducer(s, {type: 'toggleExportQr'});
+  assert.equal(s.board.exportQr, true);
 });

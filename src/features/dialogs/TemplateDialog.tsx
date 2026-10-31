@@ -3,16 +3,17 @@ import type {DialogProps} from './types';
 import type {TemplateId} from '@/lib/ids';
 import type {CommunityEntry} from '@/lib/community';
 import {useState} from 'react';
-import {ExternalLink, Loader2} from 'lucide-react';
+import {ExternalLink, Loader2, PlayCircle} from 'lucide-react';
+import FollowButton from '@/components/FollowButton';
 import Modal from '@/components/Modal';
 import Logo from '@/components/Logo';
-import {community} from '@/lib/community';
+import {community, creditFor, loadCommunity} from '@/lib/community';
 import {flagships} from '@/lib/catalog';
 import {REPO_URL} from '@/lib/constants';
 import {fromCatalog, replaceContestants} from '@/lib/board';
-import {normalizeTemplate, templateToBoard} from '@/lib/template';
+import {templateToBoard} from '@/lib/template';
 import {toast} from '@/lib/toast';
-import {openSpace} from '@/lib/toySdk';
+import {openVideo} from '@/lib/toySdk';
 import {dispatch, getEditorState} from '@/store/editor';
 
 const BUILTIN = [
@@ -20,28 +21,24 @@ const BUILTIN = [
   {key: 'blank', title: '空白', description: '从零开始，排什么都行', preview: [{name: '✦', emoji: '✦'}]},
 ];
 
-async function loadCommunity(id: TemplateId) {
-  const res = await fetch(`${import.meta.env.BASE_URL}community/${id}.json`);
-  if (!res.ok) throw Error();
-  const raw: unknown = await res.json();
-  const {template} = normalizeTemplate(raw);
-  if (!template) throw Error();
-  return template;
-}
+type CardProps = Pick<CommunityEntry, 'title' | 'description' | 'author' | 'bilibili' | 'avatar' | 'video'> & {
+  preview: ComponentProps<typeof Logo>['item'][]; count?: number; busy?: boolean; onClick: () => void;
+};
 
-function TemplateCard({title, description, count, author, bilibili, preview, busy, onClick}: Pick<CommunityEntry, 'title' | 'description' | 'author' | 'bilibili'> & {preview: ComponentProps<typeof Logo>['item'][]; count?: number; busy?: boolean; onClick: () => void}) {
+function TemplateCard({title, description, count, author, bilibili, avatar, video, preview, busy, onClick}: CardProps) {
   return <div className="template-card">
     <button type="button" className="template-main" onClick={onClick} disabled={busy}>
       <span className="template-preview">{preview.slice(0, 5).map((item, i) => <Logo key={i} item={item} size={28}/>)}{busy && <Loader2 size={18} className="spin"/>}</span>
       <strong>{title}</strong>
       {description && <small>{description}</small>}
+      {count && <span className="template-count">{count} 个选手</span>}
     </button>
-    {(count || author) && <span className="template-meta">
-      {count && `${count} 个选手`}
-      {author && (bilibili
-        ? <a href={`https://space.bilibili.com/${bilibili}`} target="_blank" rel="noreferrer" onClick={e => { if (openSpace(bilibili)) e.preventDefault(); }}>@{author}</a>
-        : <span>@{author}</span>)}
-    </span>}
+    {author && <div className="template-author">
+      {avatar ? <img src={avatar} alt="" referrerPolicy="no-referrer"/> : <span className="avatar-blank"/>}
+      <span className="author-name">{author}</span>
+      {video && <a className="video-link" href={`https://www.bilibili.com/video/${video}`} target="_blank" rel="noreferrer" title="看 UP 的视频" aria-label={`看 ${author} 的视频`} onClick={e => { if (openVideo(video)) e.preventDefault(); }}><PlayCircle size={16}/></a>}
+      {bilibili && <FollowButton uid={bilibili}/>}
+    </div>}
   </div>;
 }
 
@@ -57,7 +54,7 @@ export default function TemplateDialog({onClose}: DialogProps) {
   async function useCommunity(t: CommunityEntry) {
     setLoading(t.id);
     try {
-      dispatch({type: 'loadTemplate', board: templateToBoard(await loadCommunity(t.id))});
+      dispatch({type: 'loadTemplate', board: templateToBoard(await loadCommunity(t.id), creditFor(t))});
       toast(`已换成「${t.title}」，可以撤销`);
       onClose();
     } catch { toast('模板加载失败，请重试'); }

@@ -57,6 +57,18 @@
         }
       ]
     },
+    "video": {
+      "description": "可选：你的一个视频的 BV 号，模板中心会显示「看视频」",
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^BV[0-9A-Za-z]{10}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "tags": {
       "description": "最多 5 个标签，每个最多 12 个字",
       "anyOf": [

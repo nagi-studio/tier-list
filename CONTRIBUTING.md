@@ -16,8 +16,8 @@ templates/milk-tea/          ← 小写英文和短横线
   "$schema": "../schema.json",
   "title": "奶茶品牌排位",
   "description": "一句话介绍",
-  "author": "你的 B 站昵称",
   "bilibili": "12345678",
+  "video": "BV1xx411c7mD",
   "tags": ["饮品"],
   "tiers": "cn",
   "items": [
@@ -37,8 +37,9 @@ templates/milk-tea/          ← 小写英文和短横线
 | `items[].emoji` | | 没有图片时显示，Emoji 或 1–3 个字 |
 | `items[].icon` | | 内置品牌 Logo，比如 `openai`、`anthropic` |
 | `items[].tier` | | 预先放进第几级（从 0 数），不填就在待定区 |
-| `author` | | 署名 |
-| `bilibili` | | 你的 B 站 UID，就是 `space.bilibili.com/` 后面那串数字。填了之后，模板中心点署名能跳到你的空间 |
+| `bilibili` | | 你的 B 站 UID，就是 `space.bilibili.com/` 后面那串数字。昵称和头像会自动显示，旁边有「去关注」；用这个模板导出的图片会署你的名 |
+| `video` | | 你的一个视频的 BV 号，模板卡片上会显示「看视频」 |
+| `author` | | 署名。填了 `bilibili` 就不用写，查不到昵称时才会用它 |
 | `description`、`tags` | | 显示在模板中心 |
 
 用 VS Code 编辑时，`$schema` 那行会提供补全和报错提示。
