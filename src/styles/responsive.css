@@ -23,7 +23,6 @@
   .preset-caption{display:none}
   .toolbar-actions .btn-label{display:none}
   .toolbar-actions .btn:has(.btn-label){width:36px;padding:0}
-  .export-canvas{padding:12px;border-radius:14px}
   .board-title{font-size:18px}
   .board-meta{font-size:11.5px}
   .tier-row{min-height:66px;border-radius:10px}
@@ -36,7 +35,7 @@
   .tile .brand-avatar,.tile .brand-avatar svg{width:22px!important;height:22px!important}
   .tile-name{font-size:12px;max-width:120px}
   .drag-handle{width:18px}
-  .pool{padding:14px 12px;border-radius:14px}
+  .pool{padding-top:14px}
   .pool-heading{flex-wrap:wrap}
   .pool .hint{order:3;flex-basis:100%}
   .pool .btn{margin-left:auto;height:32px;font-size:12.5px}

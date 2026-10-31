@@ -13,6 +13,6 @@ export default function CatalogItem({model, rank, added, onAdd}: {model: Model; 
       <small>{model.provider}{model.date && ` · ${formatDate(model.date)}`}{model.open && <em>开源</em>}{model.deprecated && <em className="muted">已下线</em>}</small>
     </span>
     {model.score != null && <span className="score" title="Artificial Analysis 智能指数">{Math.round(model.score)}</span>}
-    <span className="catalog-add">{added ? <Check size={16}/> : <Plus size={16}/>}</span>
+    <span className="catalog-add">{added ? <><Check size={15}/><small>已添加</small></> : <Plus size={16}/>}</span>
   </button>;
 }

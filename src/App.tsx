@@ -36,7 +36,7 @@ export default function App() {
 
   const added = new Set(allItems(board).map(i => i.catalogId));
   const editItem = (item: Item) => setModal({kind: 'item', item: {...item}, target: containerOf(board, item.id) ?? POOL, isNew: false});
-  const newItem = (target: ContainerId = POOL, name = '') => setModal({kind: 'item', item: {id: newItemId(), name, emoji: '✦'}, target, isNew: true});
+  const newItem = (target: ContainerId = POOL, name = '') => setModal({kind: 'item', item: {id: newItemId(), name}, target, isNew: true});
   function addModels(models: Model[]) {
     const items = models.map(fromCatalog);
     dispatch({type: 'addItems', items});

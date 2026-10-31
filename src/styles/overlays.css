@@ -13,7 +13,7 @@
 @keyframes pop{from{opacity:0;transform:scale(.96) translateY(-4px)}}
 
 /* Modals */
-[data-slot=dialog-overlay]{z-index:60;background:#000a;backdrop-filter:blur(6px)}
+[data-slot=dialog-overlay]{z-index:60;background:#000b}
 .modal[data-slot=dialog-content]{z-index:70;display:block;width:min(480px,calc(100vw - 24px));max-width:min(480px,calc(100vw - 24px));max-height:calc(100dvh - 40px);overflow:auto;padding:22px;border:0;border-radius:18px;background:var(--panel);color:var(--text);box-shadow:var(--shadow-lg)}
 .modal[data-slot=dialog-content]:focus{outline:none}
 .modal-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}

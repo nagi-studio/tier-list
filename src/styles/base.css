@@ -10,7 +10,9 @@ h1,h2,p{margin:0}
 [hidden]{display:none!important}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .spacer{flex:1}
-.count{font-size:12px;font-weight:500;color:var(--muted);background:var(--surface);border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.count{font-size:13px;font-weight:500;color:var(--dim);font-variant-numeric:tabular-nums}
+::selection{background:color-mix(in srgb,var(--accent) 35%,transparent);color:var(--text)}
+input,textarea{caret-color:var(--accent)}
 
 /* Buttons */
 .btn,.btn[data-slot=button]{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:9px;font-size:13.5px;font-weight:600;white-space:nowrap;border:1px solid transparent;transition:background .15s,border-color .15s,transform .1s}
@@ -34,6 +36,8 @@ h1,h2,p{margin:0}
 .segmented>button:hover{color:var(--text)}
 .segmented>button[data-state=on],.segmented>button[data-state=active]{background:var(--raised);color:var(--text);box-shadow:0 1px 2px #0003,0 0 0 1px var(--line)}
 .segmented>button:focus-visible{outline:none;box-shadow:0 0 0 2px var(--accent-soft),0 0 0 1px var(--accent)}
+/* Radix focuses the tab on click, which Chrome paints as :focus-visible; the active fill already marks it. */
+.segmented>button[data-state=active]:focus-visible,.segmented>button[data-state=on]:focus-visible{box-shadow:0 1px 2px #0003,0 0 0 1px var(--line)}
 .segmented>button span{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
 
 

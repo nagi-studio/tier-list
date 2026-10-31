@@ -28,7 +28,7 @@ export default function ItemDialog({item: initial, target: initialTarget = POOL,
   return <Modal title={isNew ? '添加自定义选手' : '编辑选手'} onClose={onClose}>
     <form onSubmit={save}>
       <div className="item-hero">
-        <Logo item={{...item, name: item.name || '✦'}} size={56}/>
+        <Logo item={item} size={56}/>
         <label className="hero-name">
           <input autoFocus required maxLength={160} aria-label="名称" placeholder="输入选手名称" value={item.name} onChange={e => setItem({...item, name: e.target.value})}/>
           {item.provider && <small>{item.provider}</small>}

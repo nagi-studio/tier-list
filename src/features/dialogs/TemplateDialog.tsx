@@ -21,7 +21,7 @@ import {dispatch, getEditorState} from '@/store/editor';
 const BUILTIN = [
   {key: 'ai', title: 'AI 大模型', description: `当下 AA 榜单前列的 ${flagships.length} 个旗舰模型`, preview: flagships.slice(0, 5), count: flagships.length,
     author: TOY_AUTHOR.name, bilibili: TOY_AUTHOR.bilibili},
-  {key: 'blank', title: '空白', description: '从零开始，排什么都行', preview: [{name: '✦', emoji: '✦'}]},
+  {key: 'blank', title: '空白', description: '从零开始，排什么都行', preview: [{name: '空'}]},
 ];
 
 type CardProps = Pick<CommunityEntry, 'title' | 'description' | 'author' | 'bilibili' | 'video'> & {

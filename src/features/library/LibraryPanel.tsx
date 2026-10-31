@@ -2,7 +2,7 @@ import type {ModelId} from '@/lib/ids';
 import type {Model} from '@/lib/catalog';
 import {useState} from 'react';
 import {Tabs} from 'radix-ui';
-import {Search, X, Crown, Plus, Library} from 'lucide-react';
+import {Search, X, Crown, Plus} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import CatalogItem from './CatalogItem';
 import ProviderFilter from './ProviderFilter';
@@ -22,7 +22,7 @@ export default function LibraryPanel({added, onAdd, onAddMany, onCreate, onClose
   return <>
     <div className="library-head">
       <div className="library-title">
-        <Library size={18}/><h2>选手库</h2><span className="count">{models.length}</span>
+        <h2>选手库</h2><span className="count">{models.length}</span>
         {onClose && <button type="button" className="icon-btn" aria-label="关闭选手库" onClick={onClose}><X size={18}/></button>}
       </div>
       <label className="search-box">

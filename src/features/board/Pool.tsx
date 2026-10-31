@@ -1,11 +1,11 @@
 import type {Item as BoardItem} from '@/lib/board';
 import {POOL} from '@/lib/ids';
-import {Plus, Sparkles} from 'lucide-react';
+import {Plus} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import DropZone from './DropZone';
 
 export default function Pool({items, rankedCount, touch, onEditItem, onAddItem}: {items: BoardItem[]; rankedCount: number; touch: boolean; onEditItem: (item: BoardItem) => void; onAddItem: () => void}) {
-  const empty = <div className="pool-empty"><Sparkles size={18}/>{rankedCount ? '全部排完了！导出图片发个动态吧' : '待定区是空的，从选手库里挑几个'}</div>;
+  const empty = <div className="pool-empty">{rankedCount ? '全部排完了！导出图片发个动态吧' : '待定区是空的，从选手库里挑几个'}</div>;
   return <section className="pool">
     <div className="pool-heading">
       <h2>待定区 <span className="count">{items.length}</span></h2>

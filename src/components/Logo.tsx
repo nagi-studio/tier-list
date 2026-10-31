@@ -10,5 +10,5 @@ export default function Logo({item, size = 28}: {item: Pick<Item, 'name' | 'imag
   if (item.logo) return <span className="logo" style={box}><img draggable="false" src={`${import.meta.env.BASE_URL}${item.logo}`} alt=""/></span>;
   if (item.emoji) return <span className="logo" style={{...box, fontSize: size * .55}}>{item.emoji}</span>;
   const tint = item.color ? {background: item.color, color: '#fff'} : {};
-  return <span className="logo mono" style={{...box, fontSize: size * .5, ...tint}}>{item.name?.trim().slice(0, 1).toUpperCase() || '✦'}</span>;
+  return <span className="logo mono" style={{...box, fontSize: size * .5, ...tint}}>{item.name?.trim().slice(0, 1).toUpperCase()}</span>;
 }
