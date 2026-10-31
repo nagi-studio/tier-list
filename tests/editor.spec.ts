@@ -176,12 +176,23 @@ test('follow button turns into 已关注 once the visitor follows the Toy author
  await expect(page.locator('.toy-author .follow-btn')).toHaveText('已关注');
  await expect(page.locator('.credit-bar .follow-btn')).toHaveText('已关注');
 });
-test('picking a provider from the expanded list collapses it so the models are visible',async({page})=>{
+test('provider combobox: search, pick, closes, and the filtered models show',async({page})=>{
  await page.getByRole('tab',{name:/全部模型/}).click();
- await page.getByRole('button',{name:/^更多厂商/}).click();
- await page.getByRole('button',{name:'DeepSeek',exact:true}).click();
- await expect(page.getByRole('button',{name:/^更多厂商/})).toBeVisible(); // collapsed again
+ await page.getByRole('button',{name:'筛选厂商'}).click();
+ await page.getByPlaceholder(/搜索 \d+ 个厂商/).fill('step');
+ await page.getByRole('option',{name:/StepFun/}).click();
+ await expect(page.getByRole('option')).toHaveCount(0); // popover closed
+ await expect(page.getByRole('button',{name:'筛选厂商'})).toContainText('StepFun');
+ await expect(page.locator('.catalog-item').first()).toContainText('Step 5 Preview');
  await expect(page.locator('.catalog-item').first()).toBeInViewport();
- await expect(page.locator('.catalog-item').first()).toContainText('DeepSeek');
- await expect(page.locator('.library-foot')).toBeInViewport({ratio:1}); // the data-source line isn't cut off
+ await expect(page.locator('.library-foot')).toBeInViewport({ratio:1});
+});
+test('mobile: adding a model closes the library and shows the new tile',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});await noSdk(context);const page=await context.newPage();await page.goto('/');
+ await page.getByRole('button',{name:'打开选手库'}).tap();
+ await page.getByRole('textbox',{name:'搜索模型或厂商'}).fill('Step 5');
+ await page.getByRole('button',{name:'添加 Step 5 Preview'}).tap();
+ await expect(page.getByRole('textbox',{name:'搜索模型或厂商'})).toHaveCount(0); // drawer closed
+ await expect(page.locator('.tile',{hasText:'Step 5 Preview'})).toBeInViewport();
+ await context.close();
 });

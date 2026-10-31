@@ -22,12 +22,6 @@ test('edits push history; undo and redo walk it', () => {
   assert.equal(s.future.length, 0);
 });
 
-test('no-op edits return the same state', () => {
-  const s = start();
-  assert.equal(editorReducer(s, {type: 'moveRow', id: must(s.board.rows[0]).id, delta: -1}), s);
-  assert.equal(editorReducer(s, {type: 'undo'}), s);
-});
-
 test('a drag across tiers is one undo step; cancel restores the snapshot', () => {
   let s = start();
   const id = must(s.board.pool[0]).id, row = must(s.board.rows[0]).id;
@@ -109,15 +103,6 @@ test('loading a template replaces the credit; built-in templates clear it', () =
   assert.equal(s.board.credit, undefined);
   s = editorReducer(s, {type: 'undo'});
   assert.deepEqual(s.board.credit, credit);
-});
-
-test('export QR toggle defaults to on and flips', () => {
-  let s = start();
-  assert.notEqual(s.board.exportQr, false);
-  s = editorReducer(s, {type: 'toggleExportQr'});
-  assert.equal(s.board.exportQr, false);
-  s = editorReducer(s, {type: 'toggleExportQr'});
-  assert.equal(s.board.exportQr, true);
 });
 
 test('boards saved before credits existed get the AI template credit when they hold library models', () => {

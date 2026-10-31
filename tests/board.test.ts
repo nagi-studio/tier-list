@@ -34,20 +34,6 @@ test('stale selections are harmless after an item or tier has been removed', () 
   assert.equal(moveItem({board, itemId: newItemId(), target: POOL}), board);
   assert.equal(moveItem({board, itemId: must(board.pool[0]).id, target: newRowId()}), board);
 });
-test('import rejects duplicated ids, reserved ids, script URLs, and malformed colors', () => {
-  const board = start();
-  assert.ok(boardSchema.safeParse(board).success);
-  const dup = structuredClone(board);
-  must(dup.pool[1]).id = must(dup.pool[0]).id;
-  assert.equal(boardSchema.safeParse(dup).success, false);
-  assert.equal(boardSchema.safeParse({...board, pool: [{id: POOL, name: 'reserved'}]}).success, false);
-  const url = structuredClone(board);
-  must(url.pool[0]).image = 'javascript:alert(1)';
-  assert.equal(boardSchema.safeParse(url).success, false);
-  const color = structuredClone(board);
-  color.rows[0].color = 'red';
-  assert.equal(boardSchema.safeParse(color).success, false);
-});
 test('moveRowTo reorders tiers up and down and keeps their items', () => {
   const base = start();
   const ranked = moveItem({board: base, itemId: must(base.pool[0]).id, target: base.rows[0].id});

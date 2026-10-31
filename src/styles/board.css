@@ -63,3 +63,7 @@
 .follow-btn{display:inline-flex;align-items:center;gap:3px;height:26px;padding:0 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;white-space:nowrap;transition:background .15s,color .15s}
 .follow-btn:hover{background:var(--accent);color:var(--accent-text)}
 .follow-btn.followed,.follow-btn.followed:hover{background:var(--surface);color:var(--dim)}
+
+/* Freshly added from the library */
+.tile.just-added{animation:just-added 1.2s ease-out}
+@keyframes just-added{0%,30%{box-shadow:0 0 0 2px var(--accent),0 0 18px var(--accent-soft)}100%{box-shadow:0 0 0 1px var(--line)}}

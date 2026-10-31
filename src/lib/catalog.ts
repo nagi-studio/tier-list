@@ -16,8 +16,10 @@ export const source = z.object({
 
 export const flagships = models.filter(m => m.flagship);
 /** Providers ordered by how many models they have. */
-const providerCounts = models.reduce((acc, m) => acc.set(m.provider, (acc.get(m.provider) || 0) + 1), new Map<string, number>());
+export const providerCounts = models.reduce((acc, m) => acc.set(m.provider, (acc.get(m.provider) || 0) + 1), new Map<string, number>());
 export const providers = [...providerCounts].sort((a, b) => b[1] - a[1]).map(([p]) => p);
+/** A brand logo key per provider, for showing logos next to provider names. */
+export const providerIcons = new Map(models.filter(m => m.icon).map(m => [m.provider, m.icon]));
 /** Lobe icon key → provider display name. */
 export const brandNames: ReadonlyMap<string, string> = models.toReversed().reduce((names, model) => {
   if (model.icon) names.set(model.icon, model.provider);

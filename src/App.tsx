@@ -4,8 +4,8 @@ import type {Model} from '@/lib/catalog';
 import type {Item} from '@/lib/board';
 import type {EditorModal} from '@/features/dialogs/types';
 import {useRef, useState} from 'react';
-import {Sheet, SheetContent, SheetTitle} from '@/components/ui/sheet';
-import Toast from '@/components/Toast';
+import {Drawer, DrawerContent, DrawerTitle} from '@/components/ui/drawer';
+import {Toaster} from '@/components/ui/sonner';
 import Header from '@/features/layout/Header';
 import Toolbar from '@/features/board/Toolbar';
 import Board from '@/features/board/Board';
@@ -22,6 +22,7 @@ import {exportJson, exportPng, readBoardFile} from '@/lib/files';
 import {newItemId, POOL} from '@/lib/ids';
 import type {ContainerId} from '@/lib/ids';
 import {toast} from '@/lib/toast';
+import {highlightItems} from '@/lib/highlight';
 import {clearIncomingShare, useIncomingShare} from '@/lib/share';
 import {dispatch, useEditor} from '@/store/editor';
 
@@ -37,8 +38,12 @@ export default function App() {
   const editItem = (item: Item) => setModal({kind: 'item', item: {...item}, target: containerOf(board, item.id) ?? POOL, isNew: false});
   const newItem = (target: ContainerId = POOL, name = '') => setModal({kind: 'item', item: {id: newItemId(), name, emoji: '✦'}, target, isNew: true});
   function addModels(models: Model[]) {
-    dispatch({type: 'addItems', items: models.map(fromCatalog)});
+    const items = models.map(fromCatalog);
+    dispatch({type: 'addItems', items});
     toast(models.length === 1 ? `已加入待定区：${models[0]?.name}` : `已加入 ${models.length} 个旗舰模型`);
+    // On phones the library covers the board: close it and bring the new tile into view.
+    if (isMobile) setLibraryOpen(false);
+    highlightItems(items.map(item => item.id), {scroll: isMobile});
   }
   async function handleExport() {
     // Mount the off-screen share card synchronously, snapshot it, then unmount.
@@ -69,7 +74,7 @@ export default function App() {
         <Board board={board} dragId={drag?.id} touch={isMobile} onEditItem={editItem} onEditRow={row => setModal({kind: 'row', row: {...row}})} onNewItem={newItem}/>
       </section>
       {isMobile
-        ? <Sheet open={libraryOpen} onOpenChange={setLibraryOpen}><SheetContent side="bottom" className="library sheet" showCloseButton={false} aria-describedby={undefined}><SheetTitle className="sr-only">选手库</SheetTitle>{library}</SheetContent></Sheet>
+        ? <Drawer open={libraryOpen} onOpenChange={setLibraryOpen}><DrawerContent className="library sheet" aria-describedby={undefined}><DrawerTitle className="sr-only">选手库</DrawerTitle>{library}</DrawerContent></Drawer>
         : <aside className="library">{library}</aside>}
     </main>
     <input ref={importRef} type="file" accept="application/json,.json" hidden onChange={handleImport}/>
@@ -83,6 +88,6 @@ export default function App() {
     {modal?.kind === 'reset' && <ConfirmDialog title="全部移回待定区？" description="所有选手回到待定区，标题和等级保留。可以撤销。" confirmLabel="移回待定区" onConfirm={() => dispatch({type: 'resetPlacements'})} onClose={closeModal}/>}
     {modal?.kind === 'import' && <ConfirmDialog title="导入这份榜单？" description={`「${modal.board.title}」· ${allItems(modal.board).length} 个选手。会替换当前画布，可以撤销。`} confirmLabel="导入榜单" onConfirm={() => { dispatch({type: 'importBoard', board: modal.board}); toast('榜单已导入'); }} onClose={closeModal}/>}
     {exporting && <div className="share-stage" aria-hidden="true"><ShareCard ref={shareRef} board={board} showQr={board.exportQr !== false}/></div>}
-    <Toast/>
+    <Toaster theme={board.theme} position="bottom-center" offset={24}/>
   </div>;
 }

@@ -5,26 +5,20 @@ import {Tabs} from 'radix-ui';
 import {Search, X, Crown, Plus, Library} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import CatalogItem from './CatalogItem';
-import {models, flagships, providers, searchModels, source} from '@/lib/catalog';
-import {cx} from '@/lib/utils';
+import ProviderFilter from './ProviderFilter';
+import {models, flagships, searchModels, source} from '@/lib/catalog';
 
-const PAGE = 60, TOP_PROVIDERS = 9;
+const PAGE = 60;
 
 /** Browse the model catalog: flagships by default, every model via tab or search. */
 export default function LibraryPanel({added, onAdd, onAddMany, onCreate, onClose}: {added: ReadonlySet<ModelId | undefined>; onAdd: (model: Model) => void; onAddMany: (models: Model[]) => void; onCreate: (name: string) => void; onClose: (() => void) | null}) {
   const [view, setView] = useState({tab: 'flagship', query: '', provider: ''});
   const [limit, setLimit] = useState(PAGE);
-  const [allProviders, setAllProviders] = useState(false);
   const update = (patch: Partial<typeof view>) => { setView(v => ({...v, ...patch})); setLimit(PAGE); };
   const {tab, query, provider} = view;
   const searching = query.trim() !== '';
   const list = searching ? searchModels(query) : tab === 'flagship' ? flagships : provider ? models.filter(m => m.provider === provider) : models;
   const missing = flagships.filter(m => !added.has(m.id));
-  // Collapsed: the biggest providers, plus the picked one if it's further down the list.
-  const topProviders = providers.slice(0, TOP_PROVIDERS);
-  const shownProviders = allProviders ? providers : provider && !topProviders.includes(provider) ? [...topProviders, provider] : topProviders;
-  // Picking from the expanded list collapses it, so the filtered models come into view instead of more chips.
-  const pickProvider = (p: string) => { update({provider: provider === p ? '' : p}); setAllProviders(false); };
   return <>
     <div className="library-head">
       <div className="library-title">
@@ -43,11 +37,7 @@ export default function LibraryPanel({added, onAdd, onAddMany, onCreate, onClose
             <Tabs.Trigger value="all">全部模型<span>{models.length}</span></Tabs.Trigger>
           </Tabs.List>
         </Tabs.Root>
-        {tab === 'all' ? <div className={cx('chips', allProviders && 'expanded')} role="group" aria-label="筛选厂商">
-          <button type="button" className={cx('chip', !provider && 'on')} onClick={() => { update({provider: ''}); setAllProviders(false); }}>全部</button>
-          {shownProviders.map(p => <button type="button" key={p} className={cx('chip', provider === p && 'on')} aria-pressed={provider === p} onClick={() => pickProvider(p)}>{p}</button>)}
-          <button type="button" className="chip ghost" aria-expanded={allProviders} onClick={() => setAllProviders(v => !v)}>{allProviders ? '收起' : `更多厂商 ${providers.length - shownProviders.length}`}</button>
-        </div> : <div className="flagship-note">
+        {tab === 'all' ? <ProviderFilter value={provider} onChange={p => update({provider: p})}/> : <div className="flagship-note">
           <p>按 Artificial Analysis 智能指数排序：各家最强的那一个，加上分数 ≥ 49 的前沿模型。</p>
           {missing.length > 0 && <button type="button" className="link-btn" onClick={() => onAddMany(missing)}><Plus size={14}/>全部加入待定区（{missing.length}）</button>}
         </div>}

@@ -10,13 +10,6 @@
 .search-box input{flex:1;min-width:0;background:transparent;border:0;outline:0;font-size:14px;color:var(--text)}
 .search-box input::placeholder{color:var(--dim)}
 .search-box button{display:flex;color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-/* Expanded provider list scrolls on its own so the model list stays on screen. */
-.chips.expanded{max-height:176px;overflow-y:auto;scrollbar-width:thin;padding-right:2px}
-.chip{height:28px;padding:0 11px;border-radius:999px;font-size:12.5px;font-weight:550;color:var(--muted);background:var(--surface);border:1px solid var(--line);transition:all .15s}
-.chip:hover{color:var(--text);border-color:var(--line-strong)}
-.chip.on{background:var(--text);color:var(--bg);border-color:transparent}
-.chip.ghost{background:transparent;border-style:dashed}
 .library .segmented{display:flex}
 .flagship-note{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .flagship-note p{font-size:12.5px;color:var(--muted);line-height:1.6}
@@ -46,3 +39,14 @@
 /* Mobile sheet */
 .library.sheet[data-slot=sheet-content]{position:fixed;top:auto;height:86dvh;max-height:none;border:0;border-radius:20px 20px 0 0;gap:0;padding:0;z-index:55;background:var(--panel)}
 
+
+/* Provider combobox */
+.provider-trigger{justify-content:flex-start;width:100%;gap:8px}
+.provider-trigger .provider-name{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis}
+.provider-count{font-size:12px;font-weight:500;color:var(--dim);font-variant-numeric:tabular-nums}
+.provider-popover{width:var(--radix-popover-trigger-width);padding:0;background:var(--raised);border:0;border-radius:12px;box-shadow:var(--shadow-lg);color:var(--text)}
+.provider-popover [cmdk-list]{max-height:300px}
+.provider-option{gap:9px;font-size:13.5px;cursor:pointer}
+.provider-option .provider-name{flex:1}
+.provider-dot{width:20px;height:20px;border-radius:6px;background:var(--surface-hover)}
+.provider-popover [cmdk-input]:focus-visible{outline:none}
