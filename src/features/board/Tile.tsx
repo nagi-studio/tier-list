@@ -19,7 +19,9 @@ export function TileFace({item}: {item: BoardItem}) {
 export default function Tile({item, onEdit}: {item: BoardItem; onEdit: (item: BoardItem) => void}) {
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} = useSortable({id: itemDragId(item.id)});
   return <TileMenu item={item} onEdit={onEdit}><div ref={setNodeRef} className={cx('tile', isDragging && 'dragging')} data-item-id={item.id}
-    style={{transform: CSS.Transform.toString(transform), transition}}
+    // Translate only: the sorting strategy also emits scale to morph a tile into its neighbour's size,
+    // which stretches text and logos when tiles have different widths.
+    style={{transform: CSS.Translate.toString(transform), transition}}
     onMouseDown={e => listeners?.onMouseDown?.(e)} onTouchStart={e => listeners?.onTouchStart?.(e)}>
     <button type="button" className="tile-main" aria-label={`编辑 ${item.name}`} title={item.provider ? `${item.provider} · ${item.name}` : item.name} onClick={() => onEdit(item)}>
       <Logo item={item}/><span className="tile-name">{item.name}</span>

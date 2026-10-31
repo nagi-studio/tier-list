@@ -135,3 +135,16 @@ test('the Toy author is followable and credited on the built-in AI template',asy
  await expect.poll(async()=>(await state(page)).credit?.template).toBe('ai-models');
  expect((await state(page)).pool.length).toBeGreaterThan(5);
 });
+test('tiles never scale while another tile is dragged over them',async({page})=>{
+ // Put a very short and a very long name side by side, then drag the short one across the long one.
+ await page.goto('/?tpl=programming-languages');await page.getByRole('button',{name:'打开',exact:true}).click();
+ await expect.poll(async()=>(await state(page)).pool.length).toBe(16);
+ const s=await state(page),short=must(s.pool.find(i=>i.name==='C')),long=must(s.pool.find(i=>i.name==='JavaScript'));
+ const h=must(await page.locator(`[data-item-id="${short.id}"] .drag-handle`).boundingBox()),t=must(await page.locator(`[data-item-id="${long.id}"]`).boundingBox());
+ await page.mouse.move(h.x+h.width/2,h.y+h.height/2);await page.mouse.down();await page.mouse.move(h.x+10,h.y+10,{steps:3});
+ const scales:number[]=[];
+ for(let i=1;i<=12;i++){await page.mouse.move(h.x+(t.x+t.width/2-h.x)*i/12,h.y+(t.y+t.height/2-h.y)*i/12);
+  scales.push(...await page.locator('.pool .tile:not(.dragging)').evaluateAll(els=>els.map(el=>{const m=new DOMMatrix(getComputedStyle(el).transform);return Math.max(Math.abs(m.a-1),Math.abs(m.d-1));})));}
+ await page.mouse.up();
+ expect(Math.max(...scales)).toBe(0);
+});
