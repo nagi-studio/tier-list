@@ -52,3 +52,7 @@
 .provider-popover [cmdk-input]:focus-visible{outline:none}
 /* shadcn's CommandItem greys and resizes every svg inside it; brand logos must keep their own colour and size. */
 .provider-option .brand-avatar svg,.provider-trigger .brand-avatar svg{color:inherit!important;width:auto!important;height:auto!important}
+.library-source{margin:-4px 0 0;font-size:12.5px;color:var(--muted)}
+.library-empty{padding:32px 12px;text-align:center;font-size:13px;color:var(--muted)}
+.library-blank{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px 20px;text-align:center}
+.library-blank p{margin:0 0 6px;font-size:14px;line-height:1.7;color:var(--muted)}

@@ -196,3 +196,17 @@ test('mobile: adding a model closes the library and shows the new tile',async({b
  await expect(page.locator('.tile',{hasText:'Step 5 Preview'})).toBeInViewport();
  await context.close();
 });
+test('the library follows the template: its own contestants, or nothing for a blank board',async({page})=>{
+ await page.getByRole('button',{name:'模板中心'}).click();await page.getByRole('button',{name:/今天喝什么/}).click();
+ await expect(page.locator('.library-source')).toContainText('今天喝什么');
+ await expect(page.locator('.library .catalog-item')).toHaveCount(10);
+ await expect(page.locator('.library')).not.toContainText('Gemini');
+ await expect(page.getByRole('button',{name:'已添加 拿铁'})).toBeDisabled();
+ // Remove 拿铁 from the board, then add it back from the library
+ await page.getByRole('button',{name:'编辑 拿铁',exact:true}).click();await page.getByRole('button',{name:'删除选手'}).click();
+ await page.getByRole('button',{name:'添加 拿铁'}).click();
+ await expect.poll(async()=>(await state(page)).pool.some(i=>i.name==='拿铁'&&i.emoji==='🥛')).toBe(true);
+ // Blank board: no library of its own
+ await page.getByRole('button',{name:'模板中心'}).click();await page.getByRole('button',{name:/空白/}).click();
+ await expect(page.locator('.library-blank')).toContainText('没有自带选手');
+});

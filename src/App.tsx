@@ -10,6 +10,11 @@ import Header from '@/features/layout/Header';
 import Toolbar from '@/features/board/Toolbar';
 import Board from '@/features/board/Board';
 import LibraryPanel from '@/features/library/LibraryPanel';
+import TemplateLibrary from '@/features/library/TemplateLibrary';
+import EmptyLibrary from '@/features/library/EmptyLibrary';
+import {community} from '@/lib/community';
+import {AI_TEMPLATE_ID} from '@/lib/constants';
+import type {TemplateItem} from '@/lib/template';
 import ItemDialog from '@/features/dialogs/ItemDialog';
 import RowDialog from '@/features/dialogs/RowDialog';
 import TemplateDialog from '@/features/dialogs/TemplateDialog';
@@ -61,7 +66,22 @@ export default function App() {
     else toast('文件格式不对，请选择本工具导出的 JSON');
   }
 
-  const library = <LibraryPanel added={added} onAdd={m => addModels([m])} onAddMany={addModels} onCreate={name => newItem(POOL, name)} onClose={isMobile ? () => setLibraryOpen(false) : null}/>;
+  // The library follows the board's template: AI catalog, the community template's own contestants, or nothing.
+  const closeLibrary = isMobile ? () => setLibraryOpen(false) : null;
+  const communityEntry = board.credit && community.find(t => t.id === board.credit?.template);
+  const onBoard = new Set(allItems(board).map(i => i.name));
+  function addTemplateItems(items: TemplateItem[]) {
+    const created = items.map(({tier: _tier, ...item}) => ({...item, id: newItemId()}));
+    dispatch({type: 'addItems', items: created});
+    toast(items.length === 1 ? `已加入待定区：${items[0]?.name}` : `已加回 ${items.length} 个选手`);
+    if (isMobile) setLibraryOpen(false);
+    highlightItems(created.map(item => item.id), {scroll: isMobile});
+  }
+  const library = communityEntry
+    ? <TemplateLibrary entry={communityEntry} onBoard={onBoard} onAdd={addTemplateItems} onCreate={name => newItem(POOL, name)} onClose={closeLibrary}/>
+    : board.credit?.template === AI_TEMPLATE_ID || allItems(board).some(i => i.catalogId)
+      ? <LibraryPanel added={added} onAdd={m => addModels([m])} onAddMany={addModels} onCreate={name => newItem(POOL, name)} onClose={closeLibrary}/>
+      : <EmptyLibrary onCreate={() => { setLibraryOpen(false); newItem(); }} onOpenTemplates={() => { setLibraryOpen(false); setModal({kind: 'template'}); }} onClose={closeLibrary}/>;
   const rowIndex = modal?.kind === 'row' ? board.rows.findIndex(r => r.id === modal.row.id) : -1;
 
   return <div className="app-shell">
