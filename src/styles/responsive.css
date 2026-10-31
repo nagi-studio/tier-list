@@ -44,3 +44,7 @@
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 
+
+/* Narrow phones: the toolbar must fit without the page being zoomed out or clipped (Bilibili's WebView clips). */
+@media(max-width:400px){.label-wide{display:none}}
+@media(max-width:350px){.toolbar{flex-wrap:wrap;row-gap:8px}.toolbar-actions{margin-left:auto}.site-header .brand-name{display:none}}

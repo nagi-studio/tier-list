@@ -259,3 +259,12 @@ test('content check: bad text is refused where it is typed, and only checked con
  expect(await exportAndDecode(page,'/tmp/tier-list-upload.png')).toBeUndefined();
  await expect(page.getByText('含自己上传的图片')).toBeVisible();
 });
+test('narrow phones: nothing is wider than the screen and the export button is fully visible',async({browser})=>{
+ for(const width of [320,360,375]){
+  const context=await browser.newContext({viewport:{width,height:700},isMobile:true,hasTouch:true});await noSdk(context);const page=await context.newPage();await page.goto('/');
+  // isMobile zooms out instead of clipping when content is too wide; Bilibili's WebView clips, so require an exact fit
+  expect(await page.evaluate(()=>[innerWidth,document.documentElement.scrollWidth])).toEqual([width,width]);
+  await expect(page.getByRole('button',{name:'导出图片'})).toBeInViewport({ratio:1});
+  await context.close();
+ }
+});

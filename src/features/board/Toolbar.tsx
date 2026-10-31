@@ -33,7 +33,7 @@ export default function Toolbar({preset, canUndo, canRedo, exporting, exportQr, 
       </DropdownMenu.Root>
       <button type="button" className="btn subtle mobile-library" aria-label="打开选手库" onClick={onOpenLibrary}><Library size={16}/><span className="btn-label">选手库</span></button>
       <Button className="btn subtle" aria-label="分享" onClick={() => onOpenModal({kind: 'share'})}><Share2 size={16}/><span className="btn-label">分享</span></Button>
-      <Button className="btn primary" onClick={onExport} disabled={exporting}><Download size={16}/>{exporting ? '导出中…' : '导出图片'}</Button>
+      <Button className="btn primary" aria-label="导出图片" onClick={onExport} disabled={exporting}><Download size={16}/>{exporting ? '导出中…' : <>导出<span className="label-wide">图片</span></>}</Button>
     </div>
   </div>;
 }
