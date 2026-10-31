@@ -11,8 +11,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: Validate templates
-        run: bun scripts/build-templates.mjs --check
+        run: bun scripts/build-templates.ts --check
       - name: Unit tests
-        run: bun test .test.js
+        run: bun test .test
       - name: Build
         run: bun run build
