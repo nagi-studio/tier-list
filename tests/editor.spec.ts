@@ -256,6 +256,7 @@ test('content check: bad text is refused where it is typed, and only checked con
  await page.getByRole('button',{name:'自定义选手',exact:true}).click();await page.getByRole('textbox',{name:'名称',exact:true}).fill('图');
  await page.getByRole('tab',{name:'上传图片'}).click();await page.locator('[role="dialog"] input[type=file]').setInputFiles({name:'a.png',mimeType:'image/png',buffer:await sharp({create:{width:20,height:20,channels:3,background:'#f00'}}).png().toBuffer()});
  await expect(page.locator('.dropzone img')).toBeVisible();await page.getByRole('button',{name:'添加选手',exact:true}).click();
+ await expect(page.locator('.credit-bar')).toHaveCount(0); // on screen too: screenshots exist
  expect(await exportAndDecode(page,'/tmp/tier-list-upload.png')).toBeUndefined();
  await expect(page.getByText('含自己上传的图片')).toBeVisible();
 });

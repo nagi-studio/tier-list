@@ -56,10 +56,11 @@ function collisionPolicy(parse: ReturnType<typeof createDragParser>): CollisionD
 /** The exportable tier list plus the pool, sharing one drag context. `ref` points at the export canvas. */
 export default function Board({board, dragId, touch, onEditItem, onEditRow, onNewItem}: {board: BoardState; dragId?: ItemId; touch: boolean; onEditItem: (item: Item) => void; onEditRow: (row: Row) => void; onNewItem: (target: ContainerId) => void}) {
   const [source, setSource] = useState<DragSource | null>(null);
-  // "模板来自 @作者" only beside content that passed the check, and not while the title is mid-edit (screenshots).
+  // "模板来自 @作者" only beside content that passed the check and holds no uploaded pictures (the check can't
+  // see images), and not while the title is mid-edit — the same rule exports follow, since screenshots exist.
   const [editingTitle, setEditingTitle] = useState(false);
   const verdict = useScreening(boardText(board));
-  const showCredit = verdict === 'passed' && !editingTitle;
+  const showCredit = verdict === 'passed' && !editingTitle && !allItems(board).some(item => item.image);
   const parse = createDragParser(board);
   const settle = useRef<Settle>({settling: false, lastOver: null}).current;
   const collision = collisionFor(parse, settle);
